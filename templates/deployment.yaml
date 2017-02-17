@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: "{{ AppName }}"
+  namespace: "{{ Namespace }}"
+spec:
+  revisionHistoryLimit: 2
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: "{{ AppName}}"
+    spec:
+      containers:
+      - name: "{{ AppName }}"
+        image: "{{ DockerRegistry }}{{ AppName }}{{ AppTag }}"
+        imagePullPolicy: Always
+        terminationMessagePath: /dev/termination-log
+        livenessProbe:
+          httpGet:
+            path: /status
+            port: "{{ AppPort }}"
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+          failureThreshold: 5
+          periodSeconds: 10  # app has 5 + 5*10 = 55 seconds to start up
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: "{{ AppPort }}"
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+        ports:
+        - containerPort: "{{ AppPort }}"
