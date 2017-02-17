@@ -94,6 +94,7 @@ class Context(object):
 def required(fn):
     @wraps(fn)
     def inner(*args, **kwargs):
+        print args, kwargs
         try:
             ctx = Context()
             ctx.export()

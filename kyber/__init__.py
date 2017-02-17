@@ -17,6 +17,10 @@ def deploy_app(target=None, tag=None):
         target = context.target
     if tag is None:
         tag = context.tag
+    if not tag.startswith('git_'):
+        tag = 'git_{}'.format(tag)
 
+    print "Deploying {}".format(tag)
     app = deploy.App(context.name, context.docker, tag)
-    deploy.execute(app)
+    deployment = deploy.execute(app)
+    deploy.wait_for(deployment)
