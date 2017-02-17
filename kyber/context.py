@@ -1,9 +1,18 @@
+import click
 import dulwich
 import os
 import pykube
+import sys
 import yaml
 from dulwich import porcelain as git
 from functools import wraps
+
+name = None
+docker = None
+tag = None
+target = None
+dirty = None
+dirty_reason = None
 
 
 class ContextError(Exception):
@@ -23,9 +32,9 @@ class Context(object):
     target = None           # kubectl context
     git_dirty = False       # is the git repo dirty? (we only deploy built images)
     _git_status = None
+
     def __init__(self):
         self.cwd = os.path.abspath('.')
-        print "Getting context from {}".format(self.cwd)
         self.load_config()
         self.inspect_git()
 
@@ -48,22 +57,17 @@ class Context(object):
         """
         """
         try:
-
-    def inspect_git(self):
-        """
-        """
-        try:
             status = git.status()
         except dulwich.errors.NotGitRepository:
             raise ContextError("{} is not a valid git repository".format(self.cwd))
 
         repo = git.Repo(self.cwd)
-        self.tag = 'git_{}'.format(repo.head)
+        self.tag = 'git_{}'.format(repo.head())
         for state in ('add', 'modify', 'delete'):
-            if status['staged'][state]:
+            if status.staged[state]:
                 self.is_dirty = True
                 break
-        if status['unstaged']:
+        if status.unstaged:
             self.is_dirty = True
         self._git_status = status
 
@@ -73,18 +77,31 @@ class Context(object):
         kube_cfg_path = "~/.kube/config"
         try:
             cfg = pykube.KubeConfig.from_file(kube_cfg_path)
-        except pykube.exceptions.PyKubeError
+        except pykube.exceptions.PyKubeError:
             raise ContextError("Can't find a kube config in '{}'".format(kube_cfg_path))
         self.target = cfg.current_context
 
+    def export(self):
+        global name, docker, tag, target, dirty, dirty_reason
+        name = self.name
+        docker = self.docker
+        tag = self.tag
+        target = self.target
+        dirty = self.git_dirty
+        dirty_reason = self._git_status
 
-_ctx = Context()
-name = _ctx.name
-docker = _ctx.docker
-tag = _ctx.tag
-target = _ctx.target
-dirty = _ctx.git_dirty
-dirty_reason = _ctx._git_status
 
+def required(fn):
+    @wraps(fn)
+    def inner(*args, **kwargs):
+        try:
+            ctx = Context()
+            ctx.export()
+        except ContextError as e:
+            click.echo("Unable to load kyber context: {}".format(e.message))
+            sys.exit(1)
 
-__all__ = [name, docker, tag, target, dirty, dirty_reason]
+        return fn(*args, **kwargs)
+    return inner
+
+__all__ = [required, name, docker, tag, target, dirty, dirty_reason]

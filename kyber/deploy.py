@@ -17,49 +17,30 @@ class App(object):
     def image(self):
         return "{}:{}".format(self.docker, self.tag)
 
-    def container_spec(self):
-        return dict(
-            spec=dict(
-                template=dict(
-                    spec=dict(
-                        containers=[
-                            dict(
-                                image=self.image
-                            )
-                        ]
-                    )
-                )
-            )
-        )
 
-    def metadata_spec(self, set_date=False):
-        # XXX: add "kyber_managed=True" in labels / metadata?
-        spec_tpl = dict(
-            metadata=dict(
-                labels=dict(
-                    app=self.name,
-                    tag=self.tag,
-                )
-            )
-        )
-        if set_date:
-            spec_tpl['metadata']['labels']['data'] = dt.datetime.now().isoformat()
-        return dict(spec=dict(template=spec_tpl))
+class DeploymentSpec(object):
+    def __init__(self, deployment):
+        self.spec = deployment.obj
 
-    def get_spec(self, set_date=False):
-        spec = self.container_spec()
-        spec.update(self.metadata_spec(set_date))
-        return spec
+    def update_image(self, app):
+        self.spec['spec']['template']['spec']['containers'][0]['image'] = app.image
+
+    def update_metadata(self, app, fresh_date=False):
+        self.spec['spec']['template']['metadata']['labels'] = dict(
+            app=app.name,
+            tag=app.tag,
+        )
+        if fresh_date:
+            self.spec['spec']['metadata']['labels']['data'] = dt.datetime.now().isoformat()
 
 
 def execute(app, force=False):
     config = pykube.KubeConfig.from_file("~/.kube/config")
     api = pykube.HTTPClient(config)
-    deployment = pykube.Deployment.objects(api).filter(
-        name=app.name
-    ).get()
-    new_spec = app.get_spec(set_date=force)
-    print new_spec
-    return
-    deployment.set_obj(app.get_spec(set_date=force))
+    deployment = pykube.Deployment.objects(api).get_or_none(name=app.name)
+
+    update = DeploymentSpec(deployment)
+    update.update_image(app)
+    update.update_metadata(app, fresh_date=force)
+    deployment.set_obj(update.spec)
     deployment.update()

@@ -3,13 +3,16 @@ import deploy
 import context
 
 
-cli = click.group()
+@click.group()
+def cli():
+    pass
+
 
 @cli.command('deploy')
 @click.argument('target', required=False)
 @click.argument('tag', required=False)
 @context.required
-def deploy(target=None, tag=None):
+def deploy_app(target=None, tag=None):
     if target is None:
         target = context.target
     if tag is None:
