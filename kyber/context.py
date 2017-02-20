@@ -71,16 +71,6 @@ class Context(object):
             self.is_dirty = True
         self._git_status = status
 
-    def inspect_kube(self):
-        # XXX: maybe this should be derived from environment variables exported by
-        # kube-ctx.bash ?
-        kube_cfg_path = "~/.kube/config"
-        try:
-            cfg = pykube.KubeConfig.from_file(kube_cfg_path)
-        except pykube.exceptions.PyKubeError:
-            raise ContextError("Can't find a kube config in '{}'".format(kube_cfg_path))
-        self.target = cfg.current_context
-
     def export(self):
         global name, docker, tag, target, dirty, dirty_reason
         name = self.name
@@ -104,5 +94,6 @@ def required(fn):
 
         return fn(*args, **kwargs)
     return inner
+
 
 __all__ = [required, name, docker, tag, target, dirty, dirty_reason]
