@@ -3,6 +3,13 @@ from pip.req import parse_requirements
 from pip.download import PipSession
 
 
+def get_requirements():
+    requirements = parse_requirements(
+        os.path.join(os.path.dirname(__file__), "requirements.txt"),
+        session=PipSession())
+    return [str(req.req) for req in requirements]
+
+
 setup(
     name='kyber',
     version='0.1',

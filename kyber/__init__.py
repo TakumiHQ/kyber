@@ -1,6 +1,9 @@
 import click
+
 import deploy
 import context
+import init
+from objects import App
 
 
 @click.group()
@@ -21,6 +24,11 @@ def deploy_app(target=None, tag=None):
         tag = 'git_{}'.format(tag)
 
     print "Deploying {}".format(tag)
-    app = deploy.App(context.name, context.docker, tag)
+    app = App(context.name, context.docker, tag)
     deployment = deploy.execute(app)
     deploy.wait_for(deployment)
+
+
+@cli.command('init')
+def init_app():
+    init.initialize()

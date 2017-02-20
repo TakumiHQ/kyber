@@ -5,35 +5,8 @@ import json
 import pykube
 import datetime as dt
 
-
-class Deployment(pykube.Deployment):
-    @property
-    def ready(self):
-        if "status" in self.obj:
-            if "updatedReplicas" in self.obj["status"]:
-                return super(Deployment, self).ready
-        return False
-
-    @property
-    def generation(self):
-        try:
-            return self.obj['status']['observedGeneration']
-        except KeyError:
-            return 0
-
-
-class App(object):
-    name = None
-    docker = None
-    tag = None
-    def __init__(self, name, docker, tag):
-        self.name = name
-        self.docker = docker
-        self.tag = tag
-
-    @property
-    def image(self):
-        return "{}:{}".format(self.docker, self.tag)
+from kyber.objects import App, Deployment
+from kyber.lib.kube import kube_api
 
 
 class DeploymentSpec(object):
@@ -55,9 +28,7 @@ class DeploymentSpec(object):
 
 
 def execute(app, force=False):
-    config = pykube.KubeConfig.from_file("~/.kube/config")
-    api = pykube.HTTPClient(config)
-    deployment = Deployment.objects(api).get_or_none(name=app.name)
+    deployment = Deployment.objects(kube_api).get_or_none(name=app.name)
 
     update = DeploymentSpec(deployment)
     update.update_image(app)
@@ -68,10 +39,8 @@ def execute(app, force=False):
 
 
 def wait_for(deployment):
-    config = pykube.KubeConfig.from_file("~/.kube/config")
-    api = pykube.HTTPClient(config)
     old_generation = deployment.generation
-    for event in Deployment.objects(api).filter(namespace=config.namespace).watch():
+    for event in Deployment.objects(kube_api).filter(namespace=config.namespace).watch():
         depl = event.object
         if depl.name == deployment.name:
             click.echo("obj={}".format(event))
