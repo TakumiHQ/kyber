@@ -23,8 +23,6 @@ Create one? [y/N]
 (kb: dev) my-project (master) $ kb deploy [<target environment> [<tag defaults to tip of current branch>]]
 ...
 ```
- -> kubectl set image deployment/my-project my-project=registry/my-project:tag
-```
 
 
 # configure project environment/secrets

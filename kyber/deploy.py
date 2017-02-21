@@ -33,6 +33,7 @@ def execute(app, force=False):
     update = DeploymentSpec(deployment)
     update.update_image(app)
     update.update_metadata(app, fresh_date=force)
+    print update.spec
     deployment.set_obj(update.spec)
     deployment.update()
     return deployment
