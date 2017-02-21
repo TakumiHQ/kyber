@@ -7,6 +7,8 @@ import yaml
 from dulwich import porcelain as git
 from functools import wraps
 
+from kyber.lib.kube import kube_api
+
 name = None
 docker = None
 tag = None
@@ -49,9 +51,12 @@ class Context(object):
         except yaml.ParserError:
             raise ContextError("YAML parsing failed for '{}', unable to load context".format(
                 cfg_name))
-        self.name = cfg['app']['name']
-        self.docker = cfg['app']['docker']
-        self.port = cfg['app']['port']
+
+        kube_ctx = kube_api.config.current_context
+
+        self.name = cfg[kube_ctx]['name']
+        self.docker = cfg[kube_ctx]['docker']
+        self.port = cfg[kube_ctx]['port']
 
     def inspect_git(self):
         """

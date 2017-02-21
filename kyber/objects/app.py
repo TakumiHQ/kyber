@@ -28,3 +28,7 @@ class App(object):
     @property
     def image(self):
         return "{}:{}".format(self.docker, self.tag)
+
+    @property
+    def cfg_name(self):
+        return "{}-cfg".format(self.name)
