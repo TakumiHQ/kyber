@@ -7,6 +7,8 @@ import yaml
 from dulwich import porcelain as git
 from functools import wraps
 
+from kyber.lib.kube import kube_api
+
 name = None
 docker = None
 tag = None
@@ -49,9 +51,12 @@ class Context(object):
         except yaml.ParserError:
             raise ContextError("YAML parsing failed for '{}', unable to load context".format(
                 cfg_name))
-        self.name = cfg['app']['name']
-        self.docker = cfg['app']['docker']
-        self.port = cfg['app']['port']
+
+        kube_ctx = kube_api.config.current_context
+
+        self.name = cfg[kube_ctx]['name']
+        self.docker = cfg[kube_ctx]['docker']
+        self.port = cfg[kube_ctx]['port']
 
     def inspect_git(self):
         """
@@ -71,16 +76,6 @@ class Context(object):
             self.is_dirty = True
         self._git_status = status
 
-    def inspect_kube(self):
-        # XXX: maybe this should be derived from environment variables exported by
-        # kube-ctx.bash ?
-        kube_cfg_path = "~/.kube/config"
-        try:
-            cfg = pykube.KubeConfig.from_file(kube_cfg_path)
-        except pykube.exceptions.PyKubeError:
-            raise ContextError("Can't find a kube config in '{}'".format(kube_cfg_path))
-        self.target = cfg.current_context
-
     def export(self):
         global name, docker, tag, target, dirty, dirty_reason
         name = self.name
@@ -94,7 +89,6 @@ class Context(object):
 def required(fn):
     @wraps(fn)
     def inner(*args, **kwargs):
-        print args, kwargs
         try:
             ctx = Context()
             ctx.export()
@@ -104,5 +98,6 @@ def required(fn):
 
         return fn(*args, **kwargs)
     return inner
+
 
 __all__ = [required, name, docker, tag, target, dirty, dirty_reason]

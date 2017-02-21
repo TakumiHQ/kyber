@@ -1,8 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: "{{ AppName }}"
-  namespace: "{{ Namespace }}"
+  name: "{{ app.name }}"
 spec:
   revisionHistoryLimit: 2
   replicas: 1
@@ -11,17 +10,17 @@ spec:
   template:
     metadata:
       labels:
-        app: "{{ AppName}}"
+        app: "{{ app.name }}"
     spec:
       containers:
-      - name: "{{ AppName }}"
-        image: "{{ DockerRegistry }}{{ AppName }}{{ AppTag }}"
+      - name: "{{ app.name }}"
+        image: "{{ app.image }}"
         imagePullPolicy: Always
         terminationMessagePath: /dev/termination-log
         livenessProbe:
           httpGet:
             path: /status
-            port: "{{ AppPort }}"
+            port: {{ app.port }}
           initialDelaySeconds: 5
           timeoutSeconds: 1
           failureThreshold: 5
@@ -29,8 +28,8 @@ spec:
         readinessProbe:
           httpGet:
             path: /status
-            port: "{{ AppPort }}"
+            port: {{ app.port }}
           initialDelaySeconds: 5
           timeoutSeconds: 1
         ports:
-        - containerPort: "{{ AppPort }}"
+        - containerPort: {{ app.port }}

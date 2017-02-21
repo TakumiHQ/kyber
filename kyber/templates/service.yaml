@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ app.name }}"
+  annotations:
+{%- if app.ssl_cert %}
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: {{ app.ssl_cert }}
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+{%- endif %}
+{%- if app.dns_name %}
+    domainName: {{ app.dns_name }}
+  labels:
+    dns: route53
+{%- endif %}
+spec:
+  ports:
+    - port: 443
+      targetPort: {{ app.port }}
+      name: "{{ app.name }}-port"
+  selector:
+    app: "{{ app.name }}"
+  type: LoadBalancer
