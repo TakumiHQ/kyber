@@ -16,7 +16,7 @@ spec:
   ports:
     - port: 443
       targetPort: {{ app.port }}
-      name: "{{ app.name }}"-port
+      name: "{{ app.name }}-port"
   selector:
     app: "{{ app.name }}"
   type: LoadBalancer

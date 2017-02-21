@@ -1,4 +1,6 @@
 import click
+import os
+from dulwich import porcelain as git
 
 import deploy
 import context
@@ -31,4 +33,10 @@ def deploy_app(target=None, tag=None):
 
 @cli.command('init')
 def init_app():
-    init.initialize()
+    cwd = os.path.abspath('.')
+    repo = git.Repo(cwd)
+    name = init.get_default_name(repo)
+    if name is None:
+        click.prompt("Unable to derive a name from the current git repository or directory!")
+        sys.exit(1)
+    init.initialize(name, repo)

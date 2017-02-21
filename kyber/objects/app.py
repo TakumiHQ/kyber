@@ -10,7 +10,7 @@ class App(object):
         self.name = name
         self.docker = docker
         self.tag = tag
-        self.port = port
+        self.port = int(port)
         self.dns_name = dns_name
         self.ssl_cert = ssl_cert  # AWS ARN
 

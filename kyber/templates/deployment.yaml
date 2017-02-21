@@ -14,13 +14,13 @@ spec:
     spec:
       containers:
       - name: "{{ app.name }}"
-        image: "{{ app.registry }}{{ app.name }}{{ app.tag }}"
+        image: "{{ app.image }}"
         imagePullPolicy: Always
         terminationMessagePath: /dev/termination-log
         livenessProbe:
           httpGet:
             path: /status
-            port: "{{ app.port }}"
+            port: {{ app.port }}
           initialDelaySeconds: 5
           timeoutSeconds: 1
           failureThreshold: 5
@@ -28,8 +28,8 @@ spec:
         readinessProbe:
           httpGet:
             path: /status
-            port: "{{ app.port }}"
+            port: {{ app.port }}
           initialDelaySeconds: 5
           timeoutSeconds: 1
         ports:
-        - containerPort: "{{ app.port }}"
+        - containerPort: {{ app.port }}
