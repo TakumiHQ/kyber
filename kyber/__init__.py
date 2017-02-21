@@ -1,6 +1,8 @@
 import click
 import os
+import pkgutil
 from dulwich import porcelain as git
+from jinja2 import Template
 
 import deploy
 import context
@@ -14,11 +16,10 @@ def cli():
 
 
 @cli.command('deploy')
-@click.argument('target', required=False)
 @click.argument('tag', required=False)
 @click.option('--force', '-f', default=False, is_flag=True)
 @context.required
-def deploy_app(target, tag, force):
+def deploy_app(tag, force):
     if target is None:
         target = context.target
     if tag is None:
@@ -41,3 +42,11 @@ def init_app():
         click.prompt("Unable to derive a name from the current git repository or directory!")
         sys.exit(1)
     init.initialize(name, repo)
+
+
+@cli.command('completion')
+@click.pass_context
+def get_completion(ctx):
+    available_commands = cli.list_commands(ctx)
+    raw_tpl = pkgutil.get_data('kyber', 'templates/kyber-completion.sh')
+    click.echo(Template(raw_tpl).render(kyber_commands=available_commands))
