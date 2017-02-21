@@ -16,8 +16,9 @@ def cli():
 @cli.command('deploy')
 @click.argument('target', required=False)
 @click.argument('tag', required=False)
+@click.option('--force', '-f', default=False, is_flag=True)
 @context.required
-def deploy_app(target=None, tag=None):
+def deploy_app(target, tag, force):
     if target is None:
         target = context.target
     if tag is None:
@@ -27,7 +28,7 @@ def deploy_app(target=None, tag=None):
 
     print "Deploying {}".format(tag)
     app = App(context.name, context.docker, tag)
-    deployment = deploy.execute(app)
+    deployment = deploy.execute(app, force)
     deploy.wait_for(deployment)
 
 

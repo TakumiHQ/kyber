@@ -3,9 +3,9 @@
 import click
 import json
 import pykube
-import datetime as dt
+import time
 
-from kyber.objects import App, Deployment
+from kyber.objects import App, Deployment, Environment
 from kyber.lib.kube import kube_api
 
 
@@ -16,24 +16,22 @@ class DeploymentSpec(object):
     def update_image(self, app):
         self.spec['spec']['template']['spec']['containers'][0]['image'] = app.image
 
-    def update_metadata(self, app, fresh_date=False):
-        self.spec['spec']['template']['metadata']['labels'] = dict(
-            app=app.name,
-            tag=app.tag,
-        )
-        if fresh_date:
-            # labels must adhere to regex (([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])? (e.g. 'MyValue' or 'my_value'
-            # or '12345') # so we use unix timestamp integer, instead of is8601 string which contains ':' and '.'
-            self.spec['spec']['template']['metadata']['labels']['deploy_time'] = int(time.time())
+    def update_metadata(self, app):
+        # labels must adhere to regex (([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])? (e.g. 'MyValue' or 'my_value'
+        # or '12345') # so we use unix timestamp integer, instead of ios8601 string which contains ':' and '.'
+        self.spec['spec']['template']['metadata']['labels']['deploy_time'] = str(int(time.time()))
 
 
 def execute(app, force=False):
-    deployment = Deployment.objects(kube_api).get_or_none(name=app.name)
+    environment = Environment(app.name)
+    deployment = environment.deployment
+    if not force and environment.app and environment.app.tag == app.tag:
+        click.echo("`{}` is already deployed, use force to trigger redeployment".format(app.tag))
+        return deployment
 
     update = DeploymentSpec(deployment)
     update.update_image(app)
-    update.update_metadata(app, fresh_date=force)
-    print update.spec
+    update.update_metadata(app)
     deployment.set_obj(update.spec)
     deployment.update()
     return deployment
@@ -41,10 +39,10 @@ def execute(app, force=False):
 
 def wait_for(deployment):
     old_generation = deployment.generation
-    for event in Deployment.objects(kube_api).filter(namespace=config.namespace).watch():
+    for event in Deployment.objects(kube_api).filter(namespace=kube_api.config.namespace).watch():
         depl = event.object
         if depl.name == deployment.name:
-            click.echo(depl.obj['status'])
+            click.echo(".", nl=False)
             if depl.ready is True:
-                click.echo("Deployment complete, generation {} -> {}".format(old_generation, depl.generation))
+                click.echo("\nDeployment complete, generation {} -> {}".format(old_generation, depl.generation))
                 return
