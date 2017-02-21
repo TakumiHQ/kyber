@@ -10,7 +10,7 @@ from kyber.objects.deployment import Deployment
 
 from kyber.lib.kube import kube_api
 
-object_types = dict(
+object_cls = dict(
     deployment=Deployment,
     service=Service,
     secret=Secret,
@@ -34,13 +34,13 @@ class Environment(object):
         self.deployment = Deployment.objects(kube_api).get_or_none(name=name)
         self.service = Service.objects(kube_api).get_or_none(name=name)
         self.secret = Secret.objects(kube_api).get_or_none(name=name)
+        self.app = self.app_from_objects()
 
     def status(self):
-        for name, obj in self.kube_objects:
+        for name, obj in self.kube_objects.iteritems():
             click.echo("[{}] {}".format('X' if obj is not None else ' ', name))
 
-    @property
-    def app(self):
+    def app_from_objects(self):
         """ Create an App object by finding the relevant data in kubernetes
         Deployment, Service (and later Secrets) objects.
         """
@@ -66,8 +66,11 @@ class Environment(object):
         return app
 
     def sync(self):
-        for name, obj in self.kube_objects:
-            new = object_types[name](kube_from_template(name, self.app))
+        if self.app is None:
+            raise Exception("Can't sync environment without an app!")
+        for name, obj in self.kube_objects.iteritems():
+            cls = object_cls[name]
+            new = cls(kube_api, kube_from_template(name, self.app))
             if obj is None:
                 new.create()
             else:
@@ -84,7 +87,7 @@ class Environment(object):
 
     @property
     def missing_objects(self):
-        return dict((name, obj,) for (name, obj) in self.kube_objects if obj is None)
+        return dict((name, obj,) for (name, obj) in self.kube_objects.iteritems() if obj is None)
 
     @property
     def complete(self):

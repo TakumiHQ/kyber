@@ -108,6 +108,7 @@ def initialize(name, tag):
         if click.confirm("Save configuration to `.kyber/config`?"):
             config.save(context)
 
+    environment.app = config.app
     if not environment.complete:
         click.echo("Environment for `{}` in `{}` is incomplete".format(name, context))
         environment.status()

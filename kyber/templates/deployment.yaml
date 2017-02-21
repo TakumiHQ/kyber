@@ -10,7 +10,8 @@ spec:
   template:
     metadata:
       labels:
-        app: "{{ app.name}}"
+        app: "{{ app.name }}"
+        tag: "{{ app.tag }}"
     spec:
       containers:
       - name: "{{ app.name }}"
