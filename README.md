@@ -20,7 +20,7 @@ Create one? [y/N]
 # deploy a project
 
 ```
-(kb: dev) my-project (master) $ kb deploy [<target environment> [<tag defaults to tip of current branch>]]
+(kb: dev) my-project (master) $ kb deploy [<tag defaults to tip of current branch>]
 ...
 ```
 
@@ -48,6 +48,14 @@ docker: 12345.dkr.ecr.us-east-1.amazonaws.com/my-project
 Running shell in pod `my-project-...` in kubectl `dev`
 
 root@bcd23f231d09:/#
+
+```
+
+# get completion code
+
+```
+(kb: dev) my-project $ $(kb completion)
+(kb: dev) my-project $ kuse <tab>
 
 ```
 
