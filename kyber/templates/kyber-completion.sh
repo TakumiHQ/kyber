@@ -92,4 +92,8 @@ function kubify {
 	fi
 	export PS1="$__prompt) $ORIGINAL_PS1"
 }
+
+function unkubify {
+	export PS1=$ORIGINAL_PS1
+}
 kubify
