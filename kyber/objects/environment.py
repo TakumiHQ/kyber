@@ -51,8 +51,7 @@ class Environment(object):
         spec = self.deployment.obj['spec']['template']['spec']
 
         name = metadata['labels']['app']
-        tag = metadata['labels']['tag']
-        docker = spec['containers'][0]['image'].split(":")[0]
+        docker, tag = spec['containers'][0]['image'].split(":", 2)
         port = spec['containers'][0]['ports'][0].get('containerPort')
         app = App(name, docker, tag, port)
 
