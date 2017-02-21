@@ -43,7 +43,6 @@ def wait_for(deployment):
     for event in Deployment.objects(kube_api).filter(namespace=config.namespace).watch():
         depl = event.object
         if depl.name == deployment.name:
-            click.echo("obj={}".format(event))
             click.echo(depl.obj['status'])
             if depl.ready is True:
                 click.echo("Deployment complete, generation {} -> {}".format(old_generation, depl.generation))
