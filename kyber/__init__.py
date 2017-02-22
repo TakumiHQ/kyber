@@ -27,7 +27,7 @@ def deploy_app(tag, force):
         tag = 'git_{}'.format(tag)
 
     app = App(context.name, context.docker, tag)
-    if not ecr.docker_exists(app):
+    if not ecr.image_exists(app.image):
         click.echo("Can't find a docker for {}\naborting..".format(app.image))
         return
 

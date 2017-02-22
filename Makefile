@@ -2,6 +2,7 @@
 
 setup: venv
 	venv/bin/python setup.py develop
+	venv/bin/pip install -r test-requirements.txt
 
 venv:
 	virtualenv venv
