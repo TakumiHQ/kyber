@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 from pip.req import parse_requirements
 from pip.download import PipSession
 
@@ -14,7 +14,13 @@ setup(
     name='kyber',
     version='0.1',
     description='Deploy and manage simple apps in kubernetes.',
+    url='https://github.com/TakumiHQ/kyber',
+    author='Steinn Eldjarn Sigurdarson',
+    author_email='steinn@takumi.com',
+    keywords=['aws', 'kubernetes', 'deployments', 'app', 'paas'],
     install_requires=[str(req.req) for req in parse_requirements("requirements.txt", session=PipSession())],
+    packages=find_packages(),
+    package_data={'kyber': ['templates/*.yaml', 'templates/*.sh']},
     entry_points='''
         [console_scripts]
         kb=kyber:cli

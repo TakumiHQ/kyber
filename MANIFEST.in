@@ -1,2 +1,3 @@
 include *.txt
-include templates/*
+recursive-include kyber/ *.yaml
+recursive-include kyber/ *.sh

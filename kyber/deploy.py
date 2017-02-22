@@ -5,8 +5,8 @@ import json
 import pykube
 import time
 
-from kyber.objects import App, Deployment, Environment
-from kyber.lib.kube import kube_api
+from .objects import App, Deployment, Environment
+from .lib.kube import kube_api
 
 
 class DeploymentSpec(object):
