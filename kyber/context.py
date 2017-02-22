@@ -53,6 +53,8 @@ class Context(object):
                 cfg_name))
 
         kube_ctx = kube_api.config.current_context
+        if kube_ctx not in cfg:
+            raise ContextError("No configuration found for kube context `{}` in kyber context.  Forgot to run 'kb init'?".format(kube_ctx))
 
         self.name = cfg[kube_ctx]['name']
         self.docker = cfg[kube_ctx]['docker']

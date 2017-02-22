@@ -38,6 +38,10 @@ function __list_kb_deploy_targets {
 	fi
 }
 
+function __list_kb_config_keys {
+	kb config list |awk {'print $1'}
+}
+
 
 function __kyber_deploy_compgen {
 	local cur
@@ -49,12 +53,32 @@ function __kyber_deploy_compgen {
 	fi
 }
 
+function __kyber_config_compgen {
+	local cur prev
+        cur=${COMP_WORDS[COMP_CWORD]}
+	prev=${COMP_WORDS[COMP_CWORD-1]}
+	CMDS=$_KYBER_CONFIG_CMDS
+	if [[ $prev == "config" ]]; then
+		COMPREPLY=( $( echo $CMDS ) )
+		if [ "$cur" != "" ]; then
+			COMPREPLY=( $( echo "$CMDS"|$GREP_BIN "^$cur" ) )
+		fi
+	elif [[ $prev == "get" || $prev == "set" ]]; then
+		COMPREPLY=( $( __list_kb_config_keys ) )
+		if [ "$cur" != "" ]; then
+			COMPREPLY=( $( __list_kb_config_keys|$GREP_BIN "^$cur" ) )
+		fi
+	fi
+}
+
 _KYBER_CMDS=$'{%- for cmd in kyber_commands %}{{cmd}}\n{% endfor %}'
+_KYBER_CONFIG_CMDS=$'{%- for cmd in kyber_config_commands %}{{cmd}}\n{% endfor %}'
 
 function __kyber_compgen {
 	local cur prev
         cur=${COMP_WORDS[COMP_CWORD]}
 	prev=${COMP_WORDS[COMP_CWORD-1]}
+	pprev=${COMP_WORDS[COMP_CWORD-2]}
 	CMDS=$_KYBER_CMDS
 
 	if [[ $prev == "kb" ]]; then
@@ -64,6 +88,8 @@ function __kyber_compgen {
 		fi
 	elif [[ $prev == "deploy" ]]; then
 		__kyber_deploy_compgen
+	elif [[ $prev == "config" || $pprev == "config" ]]; then
+		__kyber_config_compgen
 	fi
 }
 

@@ -85,6 +85,7 @@ def from_scratch(name, tag):
 def initialize(name, tag):
     context = kube_api.config.current_context
     config = Config.from_file('.kyber/config', context)
+    click.echo("Loading environment for {} from {}".format(name, kube_api.config.current_context))
     environment = Environment(name)
 
     if config is None:

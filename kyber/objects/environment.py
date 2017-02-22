@@ -31,7 +31,6 @@ class Environment(object):
     secret = None
 
     def __init__(self, name):
-        click.echo("Loading environment for {} from {}".format(name, kube_api.config.current_context))
         self.name = name
         self.deployment = Deployment.objects(kube_api).get_or_none(name=name)
         self.service = Service.objects(kube_api).get_or_none(name=name)

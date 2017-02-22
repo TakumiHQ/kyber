@@ -60,8 +60,12 @@ def init_app():
 @click.pass_context
 def get_completion(ctx):
     available_commands = cli.list_commands(ctx)
+    available_config_commands = config_cli.list_commands(ctx)
     raw_tpl = pkgutil.get_data('kyber', 'templates/kyber-completion.sh')
-    click.echo(Template(raw_tpl).render(kyber_commands=available_commands))
+    click.echo(Template(raw_tpl).render(
+        kyber_commands=available_commands,
+        kyber_config_commands=available_config_commands
+    ))
 
 
 @config_cli.command('list')
@@ -70,7 +74,7 @@ def config_list():
     env = Environment(context.name)
     cfg = env.secret
     for key in sorted(cfg.keys()):
-        click.echo(" {} = {}".format(cfg[key]))
+        click.echo(" {} = {}".format(key, cfg[key]))
 
 
 @config_cli.command('get')
@@ -85,7 +89,6 @@ def config_get(key):
     click.echo(cfg[key])
 
 
-# XXX: UNTESTED
 @config_cli.command('envdir')
 @click.argument('target_dir')
 @context.required
