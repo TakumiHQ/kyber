@@ -8,6 +8,7 @@ import deploy
 import context
 import init
 from objects import App
+from lib import ecr
 
 
 @click.group()
@@ -20,15 +21,17 @@ def cli():
 @click.option('--force', '-f', default=False, is_flag=True)
 @context.required
 def deploy_app(tag, force):
-    if target is None:
-        target = context.target
     if tag is None:
         tag = context.tag
     if not tag.startswith('git_'):
         tag = 'git_{}'.format(tag)
 
-    print "Deploying {}".format(tag)
     app = App(context.name, context.docker, tag)
+    if not ecr.image_exists(app.image):
+        click.echo("Can't find a docker for {}\naborting..".format(app.image))
+        return
+
+    click.echo("Deploying {}".format(tag))
     deployment = deploy.execute(app, force)
     deploy.wait_for(deployment)
 
