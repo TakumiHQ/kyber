@@ -1,12 +1,61 @@
 import json
+import os
 
+from boto3.session import Session
 from functools import partial
-from iso8601 import parse_date
-
-from . import get_boto_client
 
 
-def _list_images(project):
+class Repository(object):
+    """ A broken-down representation of ecr/reponame:tag
+    example:
+        575449495505.dkr.ecr.us-east-1.amazonaws.com/takumi-server:git_12345
+        region = us-east-1
+        name = takumi-server
+        tag = git_12345
+    """
+    def __init__(self, image):
+        self.name = self._repo_name(image)
+        self.tag = self._repo_tag(image)
+        self.region = self._repo_region(image)
+
+    @staticmethod
+    def _repo_name(image):
+        name = image.split("/")[1]
+        if ":" in name:
+            name = name.split(":")[0]
+        return name
+
+    @staticmethod
+    def _repo_tag(image):
+        tag = image.split(":")[1]
+        return tag
+
+    @staticmethod
+    def _repo_region(image):
+        host = image.split("/")[0]
+        account, _, _, region, _ = host.split(".", 4)
+        return region
+
+
+def get_boto_client(service, region='eu-west-1'):
+    kwargs = {}
+    access_key_id = os.environ.get('AWS_ACCESS_KEY_ID')
+    secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+    kwargs['region_name'] = region
+
+    if access_key_id is not None:
+        kwargs['aws_access_key_id'] = access_key_id
+
+    if secret_access_key is not None:
+        kwargs['aws_secret_access_key'] = secret_access_key
+
+    session = Session(**kwargs)
+    return session.client(service)
+
+
+def _list_images(repository):
+    """ paginates through images in a repository, 50 at a time
+    """
     client = get_boto_client('ecr', 'us-east-1')
     list_images = partial(client.list_images, maxResults=50)
     while True:
@@ -19,32 +68,10 @@ def _list_images(project):
             break
 
 
-def _get_image_details(project, image_ids):
-    batch_size = 100
-    images = []
-    client = get_boto_client('ecr', 'us-east-1')
-    while len(image_ids) > 0:
-        image_details = client.batch_get_image(
-            repositoryName=project,
-            imageIds=image_ids[:batch_size]
-        )
-        image_ids = image_ids[batch_size:]
-        images += image_details['images']
-    return images
-
-
-def _get_creation_time(manifest):
-    """ find the maximum `created` timestamp for the image described
-    by this docker manifest
-    """
-    max_created = None
-    for history in manifest['history']:
-        parsed = json.loads(history['v1Compatibility'])
-        created = parse_date(parsed['created'])
-        if max_created is None or created > max_created:
-            max_created = created
-    return max_created
-
+def docker_exists(app):
+    repository = Repository(app.image)
+    image = get_image(repository.name)
+    return image is not None
 
 def get_image(project, tag):
     for image in _list_images(project):
@@ -53,29 +80,3 @@ def get_image(project, tag):
                 return image
         except KeyError:
             pass  # untagged image, warn?
-
-
-def list_images(project):
-    return _list_images(project)
-
-
-def get_image_details(project, image_ids):
-    for image in _get_image_details(project, image_ids):
-        manifest = json.loads(image['imageManifest'])
-        yield dict(
-            id=image['imageId'],
-            created=_get_creation_time(manifest),
-            manifest=manifest,
-        )
-
-
-def delete_images(project, image_ids):
-    batch_size = 100
-    images = []
-    client = get_boto_client('ecr', 'us-east-1')
-    while len(image_ids) > 0:
-        client.batch_delete_image(
-            repositoryName=project,
-            imageIds=image_ids[:batch_size]
-        )
-        image_ids = image_ids[batch_size:]
