@@ -104,7 +104,7 @@ def config_get(key):
     env = Environment(context.name)
     cfg = env.secret
     if not key in cfg:
-        click.echo("No var found for `{}`".format(key))
+        click.echo("No var found for `{}.{}`".format(context.name, key))
         return
     click.echo(cfg[key])
 
@@ -118,6 +118,18 @@ def config_set(key, value):
     cfg = env.secret
     cfg[key] = value
     cfg.update()
+
+
+@config_cli.command('unset')
+@click.argument('key')
+@context.required()
+def config_unset(key):
+    env = Environment(context.name)
+    cfg = env.secret
+    if click.confirm(u"Do you wish to delete config variable {}.{} with value of `{}`".format(
+        context.name, key, cfg[key])):
+        del cfg[key]
+        cfg.update()
 
 
 @config_cli.command('envdir')

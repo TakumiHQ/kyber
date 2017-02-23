@@ -1,4 +1,5 @@
 import base64
+import json
 import pykube
 
 
@@ -60,4 +61,13 @@ class Secret(pykube.Secret):
     def pop(self, *args):
         return self.obj['data'].pop(*args)
 
-
+    def update(self):
+        """ Overload the pykube .update because it uses PATCH, while we
+        basically want PUT, so we can delete variables from the secret.
+        """
+        r = self.api.put(**self.api_kwargs(
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(self.obj),
+        ))
+        self.api.raise_for_status(r)
+        self.set_obj(r.json())
