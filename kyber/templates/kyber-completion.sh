@@ -39,7 +39,7 @@ function __list_kb_deploy_targets {
 }
 
 function __list_kb_config_keys {
-	kb config list |awk {'print $1'}
+	cmdcache kb config list |cut -d= -f1
 }
 
 
