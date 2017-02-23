@@ -4,7 +4,7 @@ import os
 def write_envdir(cfg, target_dir):
     for param in sorted(cfg.keys()):
         with open(os.path.join(target_dir, param), "w") as out:
-            out.write("{}".format(env[param]))
+            out.write("{}".format(cfg[param]))
 
 
 def read_envdir(source_dir):
