@@ -28,7 +28,7 @@ def config_cli():
 @cli.command('deploy')
 @click.argument('tag', required=False)
 @click.option('--force', '-f', default=False, is_flag=True)
-@context.required
+@context.required()
 def deploy_app(tag, force):
     if tag is None:
         tag = context.tag
@@ -59,7 +59,7 @@ def init_app():
 @cli.command('status')
 @click.option('--skip-ecr', is_flag=True, default=False)
 @click.option('--skip-k8s', is_flag=True, default=False)
-@context.required
+@context.required()
 def get_status(skip_ecr, skip_k8s):
     app = App(context.name, context.docker, context.tag)
 
@@ -89,7 +89,7 @@ def get_completion(ctx):
 
 
 @config_cli.command('list')
-@context.required
+@context.required(checks=['config'])
 def config_list():
     env = Environment(context.name)
     cfg = env.secret
@@ -99,7 +99,7 @@ def config_list():
 
 @config_cli.command('get')
 @click.argument('key')
-@context.required
+@context.required()
 def config_get(key):
     env = Environment(context.name)
     cfg = env.secret
@@ -112,7 +112,7 @@ def config_get(key):
 @config_cli.command('set')
 @click.argument('key')
 @click.argument('value')
-@context.required
+@context.required()
 def config_set(key, value):
     env = Environment(context.name)
     cfg = env.secret
@@ -122,7 +122,7 @@ def config_set(key, value):
 
 @config_cli.command('envdir')
 @click.argument('target_dir')
-@context.required
+@context.required()
 def config_envdir(target_dir):
     env = Environment(context.name)
     cfg = env.secret
@@ -143,7 +143,7 @@ def config_envdir(target_dir):
 
 @config_cli.command('load')
 @click.argument('source')
-@context.required
+@context.required()
 def config_load(source):
     source = os.path.abspath(source)
     env = Environment(context.name)
