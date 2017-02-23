@@ -1,3 +1,4 @@
 include *.txt
+include fastentrypoints.py
 recursive-include kyber/ *.yaml
 recursive-include kyber/ *.sh
