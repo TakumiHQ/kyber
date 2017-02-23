@@ -33,6 +33,8 @@ function __kube_context_compgen {
 }
 
 function __list_kb_deploy_targets {
+	# XXX: REPLACE WITH `kb deploy_targets` or similar command which lists actual
+	#      image tags from ECR
 	if [ -d ".git" ]; then
 		git log --format=oneline | awk {'print $1'} | head -10
 	fi
