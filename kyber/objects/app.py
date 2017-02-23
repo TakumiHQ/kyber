@@ -5,6 +5,7 @@ class App(object):
     port = None
     dns_name = None
     ssl_cert = None
+    secret = None
 
     def __init__(self, name, docker, tag, port=None, dns_name=None, ssl_cert=None):
         self.name = name
@@ -28,7 +29,3 @@ class App(object):
     @property
     def image(self):
         return "{}:{}".format(self.docker, self.tag)
-
-    @property
-    def cfg_name(self):
-        return "{}-cfg".format(self.name)

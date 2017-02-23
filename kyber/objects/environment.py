@@ -3,10 +3,11 @@ import pkgutil
 import yaml
 from jinja2 import Template
 
-from pykube.objects import Secret, Service
+from pykube.objects import Service
 
 from kyber.objects.app import App
 from kyber.objects.deployment import Deployment
+from kyber.objects.secret import Secret
 
 from kyber.lib.kube import kube_api
 
@@ -30,7 +31,7 @@ class Environment(object):
     secret = None
 
     def __init__(self, name):
-        click.echo("Loading environment for {} from {}".format(name, kube_api.config.current_context))
+        self.name = name
         self.deployment = Deployment.objects(kube_api).get_or_none(name=name)
         self.service = Service.objects(kube_api).get_or_none(name=name)
         self.secret = Secret.objects(kube_api).get_or_none(name=name)
@@ -54,6 +55,7 @@ class Environment(object):
         docker, tag = spec['containers'][0]['image'].split(":", 2)
         port = spec['containers'][0]['ports'][0].get('containerPort')
         app = App(name, docker, tag, port)
+        app.secret = self.secret
 
         if self.service is not None:
             metadata = self.service.obj['metadata']
@@ -91,3 +93,6 @@ class Environment(object):
     @property
     def complete(self):
         return len(self.missing_objects) == 0
+
+    def __repr__(self):
+        return "<Environment:{} @ {}>".format(self.name, kube_api.config.current_context)

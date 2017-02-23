@@ -1,13 +1,9 @@
 import click
 import dulwich
 import os
-import pykube
 import sys
 import yaml
-from dulwich import porcelain as git
 from functools import wraps
-
-from kyber.lib.kube import kube_api
 
 name = None
 docker = None
@@ -35,10 +31,19 @@ class Context(object):
     git_dirty = False       # is the git repo dirty? (we only deploy built images)
     _git_status = None
 
-    def __init__(self):
+    def __init__(self, checks=None):
+        tasks = dict(
+            config=self.load_config,
+            git_tag=self.git_tag,
+            git_status=self.git_status,
+        )
+        if checks is None:
+            checks = ['config', 'git_tag', 'git_status']
+
         self.cwd = os.path.abspath('.')
-        self.load_config()
-        self.inspect_git()
+        for task in checks:
+            tasks[task]()
+
 
     def load_config(self):
         cfg_name = os.path.join(self.cwd, '.kyber/config')
@@ -52,22 +57,22 @@ class Context(object):
             raise ContextError("YAML parsing failed for '{}', unable to load context".format(
                 cfg_name))
 
+        from kyber.lib.kube import kube_api
         kube_ctx = kube_api.config.current_context
+        if kube_ctx not in cfg:
+            raise ContextError("No configuration found for kube context `{}` in kyber context.  Forgot to run 'kb init'?".format(kube_ctx))
 
         self.name = cfg[kube_ctx]['name']
         self.docker = cfg[kube_ctx]['docker']
         self.port = cfg[kube_ctx]['port']
 
-    def inspect_git(self):
-        """
-        """
+    def git_status(self):
+        from dulwich import porcelain as git
         try:
             status = git.status()
         except dulwich.errors.NotGitRepository:
             raise ContextError("{} is not a valid git repository".format(self.cwd))
 
-        repo = git.Repo(self.cwd)
-        self.tag = 'git_{}'.format(repo.head())
         for state in ('add', 'modify', 'delete'):
             if status.staged[state]:
                 self.is_dirty = True
@@ -75,6 +80,11 @@ class Context(object):
         if status.unstaged:
             self.is_dirty = True
         self._git_status = status
+
+    def git_tag(self):
+        from dulwich import porcelain as git
+        repo = git.Repo(self.cwd)
+        self.tag = 'git_{}'.format(repo.head())
 
     def export(self):
         global name, docker, tag, target, dirty, dirty_reason
@@ -86,18 +96,20 @@ class Context(object):
         dirty_reason = self._git_status
 
 
-def required(fn):
-    @wraps(fn)
-    def inner(*args, **kwargs):
-        try:
-            ctx = Context()
-            ctx.export()
-        except ContextError as e:
-            click.echo("Unable to load kyber context: {}".format(e.message))
-            sys.exit(1)
+def required(**ctx_kwargs):
+    def wrapper(fn, *args, **kwargs):
+        @wraps(fn)
+        def inner(*args, **kwargs):
+            try:
+                ctx = Context(**ctx_kwargs)
+                ctx.export()
+            except ContextError as e:
+                click.echo("Unable to load kyber context: {}".format(e.message))
+                sys.exit(1)
 
-        return fn(*args, **kwargs)
-    return inner
+            return fn(*args, **kwargs)
+        return inner
+    return wrapper
 
 
 __all__ = [required, name, docker, tag, target, dirty, dirty_reason]

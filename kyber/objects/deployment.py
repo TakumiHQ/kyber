@@ -15,3 +15,6 @@ class Deployment(pykube.Deployment):
             return self.obj['status']['observedGeneration']
         except KeyError:
             return 0
+
+    def __repr__(self):
+        return "<Deployment {}>".format(self.name)
