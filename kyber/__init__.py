@@ -56,6 +56,26 @@ def init_app():
     init.initialize(name, repo)
 
 
+@cli.command('status')
+@click.option('--skip-ecr', is_flag=True, default=False)
+@click.option('--skip-k8s', is_flag=True, default=False)
+@context.required
+def get_status(skip_ecr, skip_k8s):
+    app = App(context.name, context.docker, context.tag)
+
+    click.echo("Project: {}".format(context.name))
+    click.echo("Docker: {}".format(context.docker))
+    if not skip_k8s:
+        deployed_app = Environment(context.name).app
+        click.echo("Deployed tag: {}".format(deployed_app.tag if deployed_app is not None else 'N/A'))
+
+    deployable = '?'
+    if not skip_ecr:
+        deployable = 'y' if ecr.image_exists(app.image) else 'n'
+
+    click.echo("Current tag: {} [deployable: {}]".format(context.tag, deployable))
+
+
 @cli.command('completion')
 @click.pass_context
 def get_completion(ctx):
@@ -74,7 +94,7 @@ def config_list():
     env = Environment(context.name)
     cfg = env.secret
     for key in sorted(cfg.keys()):
-        click.echo(" {} = {}".format(key, cfg[key]))
+        click.echo("{}={}".format(key, cfg[key]))
 
 
 @config_cli.command('get')
@@ -87,6 +107,17 @@ def config_get(key):
         click.echo("No var found for `{}`".format(key))
         return
     click.echo(cfg[key])
+
+
+@config_cli.command('set')
+@click.argument('key')
+@click.argument('value')
+@context.required
+def config_set(key, value):
+    env = Environment(context.name)
+    cfg = env.secret
+    cfg[key] = value
+    cfg.update()
 
 
 @config_cli.command('envdir')
