@@ -12,8 +12,8 @@ def get_requirements():
 
 
 setup(
-    name='kyber',
-    version='0.1',
+    name='kyber-k8s',
+    version='0.2.0',
     description='Deploy and manage simple apps in kubernetes.',
     url='https://github.com/TakumiHQ/kyber',
     author='Steinn Eldjarn Sigurdarson',

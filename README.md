@@ -1,26 +1,33 @@
 # kyber
 
-Kyber is an opinionated kubernetes app deployment and management tool.  It's built to easily
-create and deploy apps to a kubernetes cluster running in AWS, the apps are stateless and
-based on a single docker which can be pulled from an ECR (Elastic Container Registry).
-Additionally kyber sets metadata which will trigger automatic route53 DNS entries if the
-[route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes) plugin is installed.
+Kyber is a kubernetes app deployment and management tool.  It's built to easily
+create and deploy apps to a kubernetes cluster running in AWS, the apps are
+stateless and based on a single docker which can be pulled from an ECR (Elastic
+Container Registry).  Additionally kyber sets metadata which will trigger
+automatic route53 DNS entries if the [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
+plugin is installed.
 
-Kyber is tightly coupled with your local kubectl configuration, and the bash/zsh completion
-adds a prefix to `$PS1` (shell prompt) so that the currently chosen kubectl context and the
-namespace of that context can be seen at all times.  See details at [completion](#completion).
-Also kyber is tightly coupled with git, and assumes containers are tagged with `git_<hash>`
-from the local repo.
+## Installation
+
+    $ pip install kyber-k8s
+
+## Description
+
+Kyber is tightly coupled with your local kubectl configuration, and the bash/zsh
+completion adds a prefix to `$PS1` (shell prompt) so that the currently chosen
+kubectl context and the namespace of that context can be seen at all times.  See
+details at [completion](#completion).  Also kyber is tightly coupled with git,
+and assumes containers are tagged with `git_<hash>` from the local repo.
 
 An "app" consists of the following k8s objects:
- - Deployment
- - Service
- - Secret
+ - [Deployment](https://kubernetes.io/docs/user-guide/deployments/)
+ - [Service](https://kubernetes.io/docs/user-guide/services/)
+ - [Secret](https://kubernetes.io/docs/user-guide/secrets/)
 
-Each of which has the name of the "app".  The `deploy` command constructs a new image path
-for `container[0]` of the Deployment, but other parts of the spec template should be left
-alone and can be edited with `kubectl edit deployment {app name}`, for example the number
-of replicas, and various k8s strategies.
+Each of which has the name of the "app".  The `deploy` command constructs a new
+image path for `container[0]` of the Deployment, but other parts of the spe
+template should be left alone and can be edited with `kubectl edit deployment
+{app name}`, for example the number of replicas, and various k8s strategies.
 
 When setting up a new app you need to provide the following metadata:
 
@@ -30,11 +37,11 @@ When setting up a new app you need to provide the following metadata:
  - DNS name (only has effect if [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes) is installed)
  - SSL certificate ARN
 
-When initializing a new app `kyber` will assume it is health checked using HTTP GET calls
-to `/status` on the previously mentioned app port.  The health checks can be changed/disabled
-with `kubectl edit deployment {app name}`.
+When initializing a new app `kyber` will assume it is health checked using HTTP
+GET calls to `/status` on the previously mentioned app port.  The health checks
+can be changed/disabled with `kubectl edit deployment {app name}`.
 
-# List of commands
+## Kyber Commands
 
 - [init](#init) - initialize a project
 - [deploy](#deploy)
