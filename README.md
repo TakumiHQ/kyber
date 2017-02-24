@@ -1,26 +1,87 @@
 # kyber
 
-kyber is an opinionated wrapper around ECR-backed kubernetes deployments.
+Kyber is an opinionated kubernetes app deployment and management tool.  It's built to easily
+create and deploy apps to a kubernetes cluster running in AWS, the apps are stateless and
+based on a single docker which can be pulled from an ECR (Elastic Container Registry).
+Additionally kyber sets metadata which will trigger automatic route53 DNS entries if the
+[route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes) plugin is installed.
 
-## initialize a project
+Kyber is tightly coupled with your local kubectl configuration, and the bash/zsh completion
+adds a prefix to `$PS1` (shell prompt) so that the currently chosen kubectl context and the
+namespace of that context can be seen at all times.  See details at [completion](#completion).
+Also kyber is tightly coupled with git, and assumes containers are tagged with `git_<hash>`
+from the local repo.
 
-(kb: dev) my-project (master) $ kb init
-Did not find an existing deployment for `my-project` in `dev`:
-Create one? [y/N]
+An "app" consists of the following k8s objects:
+ - Deployment
+ - Service
+ - Secret
 
-    .. prompt for name, docker (registry), port, external dns?
-    ... created deployment: my-project in `dev`
-    ... created service: my-project
-    ... created secret: my-project-cfg
+Each of which has the name of the "app".  The `deploy` command constructs a new image path
+for `container[0]` of the Deployment, but other parts of the spec template should be left
+alone and can be edited with `kubectl edit deployment {app name}`, for example the number
+of replicas, and various k8s strategies.
 
+When setting up a new app you need to provide the following metadata:
 
-## deploy a project
+ - docker base path (`registry/repo` - not including a `:tag`)
+ - name (must be unique within this kubernetes cluster namespace)
+ - port
+ - DNS name (only has effect if [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes) is installed)
+ - SSL certificate ARN
+
+When initializing a new app `kyber` will assume it is health checked using HTTP GET calls
+to `/status` on the previously mentioned app port.  The health checks can be changed/disabled
+with `kubectl edit deployment {app name}`.
+
+# List of commands
+
+- [init](#init) - initialize a project
+- [deploy](#deploy)
+- [config](#config)
+  - [list](#list)
+  - [get](#get)
+  - [set](#set)
+  - [unset](#unset)
+  - [envdir](#envdir)
+  - [load](#load)
+- [status](#status)
+- [shell](#shell)
+- [completion](#completion)
+
+## init
+
+### Initialize a project
+
+    (kb: dev) my-project (master) $ kb init
+
+Init checks to see if you have a local (copied) `.kyber/config` file which it
+can use to initialize the project against this kubernetes context, if a matching
+deployment/service/secret trifecta is not found within the context.
+
+Init also checks to see if a trifecta matching the project name exists, and
+will attempt to write a `.kyber/config` file to match, if found.  This logic is
+a bit too clever and confusing, and should be cleaned up; it was written to
+make it easier to setup kyber for an existing project.
+
+If nothing is found, init will prompt for the necessary metadata and then proceed
+to create the Deployment, Service and Secret objects as well as the `.kyber/config`
+file entry.
+
+## deploy
+
+### Deploy another container to a project
 
     (kb: dev) my-project (master) $ kb deploy [<tag defaults to tip of current branch>]
     ...
 
 
-## configure project config (secrets)
+## config
+
+The config command group manages the variables defined in the app secret, which is by
+default mounted to `/secrets/` within the app container.  The subcommands make it easy
+to dump/load the data to/from envdir's and dotenv files, as well as getting, setting
+and unsetting individual values.
 
 ### list
 
@@ -43,14 +104,12 @@ Create one? [y/N]
     (kb: dev) my-project (master) $ kb config get OTHERS
     99%
 
-
 ### unset
 
     (kb: dev) my-project (master) $ kb config unset OTHERS
     Do you wish to delete config variable my-project.OTHERS with value of `99%` [y/N]:
     (kb: dev) my-project (master) $ kb config get OTHERS
     No var found for `my-project.OTHERS`
-
 
 ### envdir
 
@@ -71,7 +130,11 @@ It detects whether the given argument is a file or a directory:
 	(kb: dev) my-project $ kb config load env-dev-copy
 	Found 4 vars in `/Users/ses/w/my-project/env-dev-copy` do you wish to write them to <Environment:my-project @ dev> [y/N]
 
-# see project deployment status
+## status
+
+See the current kyber status of a project, most importantly the deployed tag,
+the docker registry/repo, and whether the tip of the current master is deployable
+(is there a docker named `{app.docker:git_{git.head()}}` in the ECR.
 
     (kb: dev) my-project (master) $ kb status
     Project: my-project
@@ -79,22 +142,48 @@ It detects whether the given argument is a file or a directory:
     Deployed tag: git_6eea5482b7f55823f86a63d9ddf6d84ec6769a78
     Current tag: git_6eea5482b7f55823f86a63d9ddf6d84ec6769a78 [deployable: y]
 
-# run a shell [TBD]
+## shell
 
-```
-(kb: dev) my-project (master) $ kb shell
-Running shell in pod `my-project-...` in kubectl `dev`
+Execute `/bin/bash` inside one of the pods in your app, useful for debugging.
+Will choose the first ready pod, or the last one returned if none are ready.
+Ready here refers to the kubernetes definition (liveness/readiness).
 
-root@bcd23f231d09:/#
+    (kb: dev) my-project (master) $ kb shell
+    Running shell in pod `my-project-...` in kubectx `dev`
+    root@bcd23f231d09:~#
 
-```
+## completion
 
-# get completion code
+As mentioned above kyber is tightly coupled with the local kubectl config
+and context, and thus changes `$PS1` to prefix with your current kubectl
+context.  This prefixing can be turned on or off by calling `kubify` and
+`unkubify` functions which are declared in the completion script.
 
-```
-(kb: dev) my-project $ kb completion >~/.kyber-completion.sh
-(kb: dev) my-project $ source ~/.kyber-completion.sh
-(kb: dev) my-project $ kuse <tab>
-```
+    (kb: dev) my-project $ kb completion >~/.kyber-completion.sh
+    (kb: dev) my-project $ source ~/.kyber-completion.sh
+    (kb: dev) my-project $ kuse <tab>
 
-Add `source ~/.kyber-completion.sh` to your shell `.profile`.
+To install the kyber completion script add `source ~/.kyber-completion.sh` to
+your shell `.profile`.
+
+The completion script adds basic tab-completion for the commands of kyber,
+but also adds two new commands to more easily switch between kubectl contexts:
+
+### kuse
+
+`kuse` switches between kubernetes contexts, and tab completes as well. It
+is basically an alias for `kubectl config use-context`.
+
+    (kb: dev) my-project $ kuse prod
+    (kb: prod) my-project $
+
+### kubes
+
+`kubes` lists your kubectl contexts, it's basically an alias for
+`kubectl config get-contexts`.
+
+    (kb: dev) my-project $ kubes
+    CURRENT   NAME                               CLUSTER                            AUTHINFO                       NAMESPACE
+    *         eu-west-1.kube.takumi.com          eu-west-1.kube.takumi.com          eu-west-1.kube.takumi.com      prod
+              eu-central-1.kube.takumi.com       eu-central-1.kube.takumi.com       eu-central-1.kube.takumi.com
+              eu-central-1.kube.takumi.com-OLD   eu-central-1.kube.takumi.com-OLD   aws_k8s                        dev

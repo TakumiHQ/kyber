@@ -12,6 +12,10 @@ spec:
       labels:
         app: "{{ app.name }}"
     spec:
+      volumes:
+      - name: "{{ app.name }}-secrets"
+        secret:
+          secretName: "{{ app.name }}"
       containers:
       - name: "{{ app.name }}"
         image: "{{ app.image }}"
@@ -33,3 +37,6 @@ spec:
           timeoutSeconds: 1
         ports:
         - containerPort: {{ app.port }}
+        volumeMounts:
+        - name: "{{ app.name }}-secrets"
+          mountPath: /secrets

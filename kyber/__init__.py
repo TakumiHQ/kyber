@@ -9,6 +9,7 @@ import deploy
 import config
 import context
 import init
+import shell
 
 # objects and helpers
 from objects import App, Environment
@@ -86,6 +87,12 @@ def get_completion(ctx):
         kyber_commands=available_commands,
         kyber_config_commands=available_config_commands
     ))
+
+
+@cli.command('shell')
+@context.required()
+def run_shell():
+    shell.run(context.name)
 
 
 @config_cli.command('list')
