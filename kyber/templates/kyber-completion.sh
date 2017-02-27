@@ -99,6 +99,7 @@ complete -F _kb_completion -o default kb;
 
 function kuse {
 	__kube_guard
+	unkubify
 	kubectl config use-context $1
 	kubify
 }
