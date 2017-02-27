@@ -2,7 +2,7 @@ GREP_BIN=$(/usr/bin/which grep)
 ORIGINAL_PS1=$PS1
 
 function __kube_check {
-	kubectl 2>&1>/dev/null
+	kubectl > /dev/null 2>&1
 	return $?
 }
 
@@ -99,6 +99,7 @@ complete -F _kb_completion -o default kb;
 
 function kuse {
 	__kube_guard
+	unkubify
 	kubectl config use-context $1
 	kubify
 }

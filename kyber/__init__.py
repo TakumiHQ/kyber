@@ -54,7 +54,7 @@ def init_app():
     if name is None:
         click.prompt("Unable to derive a name from the current git repository or directory!")
         sys.exit(1)
-    init.initialize(name, repo)
+    init.initialize(name, repo.head())
 
 
 @cli.command('status')

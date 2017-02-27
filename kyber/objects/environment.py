@@ -59,11 +59,15 @@ class Environment(object):
 
         if self.service is not None:
             metadata = self.service.obj['metadata']
-            if 'dns' in metadata['labels']:
+            try:
                 dns_name = metadata['annotations']['domainName']
                 app.dns_name = dns_name
-            if 'service.beta.kubernetes.io/aws-load-balancer-ssl-cert' in metadata['annotations']:
+            except KeyError:
+                pass
+            try:
                 app.ssl_cert = metadata['annotations']['service.beta.kubernetes.io/aws-load-balancer-ssl-cert']
+            except KeyError:
+                pass
         return app
 
     def sync(self):
