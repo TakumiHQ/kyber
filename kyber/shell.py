@@ -13,7 +13,7 @@ def get_kubectl_path():
 
 
 def run(name):
-    for pod in Pod.objects(kube_api).filter(selector={'app': 'takumi-server'}).iterator():
+    for pod in Pod.objects(kube_api).filter(selector={'app': name}).iterator():
         if pod.ready:  # use the first ready pod, otherwise we use the last pod
             break
 
