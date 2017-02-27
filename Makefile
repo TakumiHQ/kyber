@@ -14,6 +14,7 @@ test:
 	venv/bin/py.test tests/ -vsx --pdb
 
 release:
+	rm dist/*
 	venv/bin/python setup.py sdist bdist_wheel
 	twine upload dist/*.tar.gz
 	twine upload dist/*.whl
