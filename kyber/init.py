@@ -1,12 +1,8 @@
 import click
 import os
-import sys
 import yaml
-from dulwich import porcelain as git
-from jinja2 import Template
-from pykube.objects import Secret, Service
 
-from kyber.objects import App, Deployment, Environment
+from kyber.objects import App, Environment
 from kyber.lib.kube import kube_api
 
 
@@ -62,7 +58,7 @@ def get_default_name(repo):
         origin = repo.get_config()[('remote', 'origin')]['url']
         dotgit = origin.split('/')[-1]
         return dotgit.replace('.git', '')
-    except KeyError, IndexError:
+    except (KeyError, IndexError):
         pass
 
     # 2. use repo directory path
@@ -73,7 +69,8 @@ def get_default_name(repo):
 
 
 def from_scratch(name, tag):
-    docker = click.prompt("Enter ECR (e.g. ...dkr.ecr.us-east-1.amazonaws.com/{})".format(name), default=os.environ.get('ECR'))
+    docker = click.prompt(
+        "Enter ECR (e.g. ...dkr.ecr.us-east-1.amazonaws.com/{})".format(name), default=os.environ.get('ECR'))
     port = click.prompt("Enter app port", default=5000)
     tag = click.prompt("Enter tag", default='git_{}'.format(tag))
     dns_name = click.prompt("Enter DNS name (enter for none)", default=None)

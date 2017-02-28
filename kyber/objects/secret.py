@@ -41,10 +41,7 @@ class Secret(pykube.Secret):
         return unicode(repr(self))
 
     def has_key(self, k):
-        return self.obj['data'].has_key(k)
-
-    def pop(self, k, d=None):
-        return self.obj['data'].pop(k, d)
+        return k in self.obj['data']
 
     def keys(self):
         return self.obj['data'].keys()

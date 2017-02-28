@@ -1,6 +1,7 @@
 import click
 import os
 import pkgutil
+import sys
 from dulwich import porcelain as git
 from jinja2 import Template
 
@@ -110,7 +111,7 @@ def config_list():
 def config_get(key):
     env = Environment(context.name)
     cfg = env.secret
-    if not key in cfg:
+    if key not in cfg:
         click.echo("No var found for `{}.{}`".format(context.name, key))
         return
     click.echo(cfg[key])
@@ -134,7 +135,7 @@ def config_unset(key):
     env = Environment(context.name)
     cfg = env.secret
     if click.confirm(u"Do you wish to delete config variable {}.{} with value of `{}`".format(
-        context.name, key, cfg[key])):
+            context.name, key, cfg[key])):
         del cfg[key]
         cfg.update()
 

@@ -44,7 +44,6 @@ class Context(object):
         for task in checks:
             tasks[task]()
 
-
     def load_config(self):
         cfg_name = os.path.join(self.cwd, '.kyber/config')
         try:
@@ -60,7 +59,8 @@ class Context(object):
         from kyber.lib.kube import kube_api
         kube_ctx = kube_api.config.current_context
         if kube_ctx not in cfg:
-            raise ContextError("No configuration found for kube context `{}` in kyber context.  Forgot to run 'kb init'?".format(kube_ctx))
+            raise ContextError(("No configuration found for kube context `{}` in kyber context."
+                                " Forgot to run 'kb init'?").format(kube_ctx))
 
         self.name = cfg[kube_ctx]['name']
         self.docker = cfg[kube_ctx]['docker']
