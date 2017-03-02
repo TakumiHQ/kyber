@@ -1,4 +1,5 @@
 .PHONY: setup
+GIT_BRANCH=$(shell git branch |grep -e "^\*"|cut -d" " -f2)
 
 setup: venv
 	venv/bin/python setup.py develop
@@ -18,10 +19,24 @@ test: lint
 	venv/bin/py.test tests/ -vsx --pdb
 
 release:
-	rm dist/*
+	@git checkout v$(VERSION)
+	@-rm dist/*
 	venv/bin/python setup.py sdist bdist_wheel
-	twine upload dist/*.tar.gz
-	twine upload dist/*.whl
+	@read -n 1 -r -p "Release $(VERSION) to PyPI? " REPLY; \
+	if [ "$$REPLY" == "y" ]; then\
+		twine upload dist/*.tar.gz;\
+		twine upload dist/*.whl;\
+	else\
+		echo "Not uploading..";\
+	fi
+	git checkout $(GIT_BRANCH)
+
+fexx:
 
 release_test:
 	venv/bin/python setup.py sdist bdist_wheel upload -r pypitest
+
+version:
+	echo "__version__ = '$(VERSION)'" > kyber/_version.py
+	git commit --allow-empty -a -m "Bumping version to $(VERSION)"
+	git tag -a v$(VERSION)

@@ -11,9 +11,15 @@ def get_requirements():
     return [str(req.req) for req in requirements]
 
 
+def get_version():
+    __version__ = None
+    with open('kyber/_version.py') as version_src:
+        exec(version_src.read())
+    return __version__
+
 setup(
     name='kyber-k8s',
-    version='0.2.3',
+    version=get_version(),
     description='Deploy and manage simple apps in kubernetes.',
     url='https://github.com/TakumiHQ/kyber',
     author='Steinn Eldjarn Sigurdarson',
