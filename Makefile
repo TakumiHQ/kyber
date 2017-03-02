@@ -38,5 +38,5 @@ release_test:
 
 version:
 	echo "__version__ = '$(VERSION)'" > kyber/_version.py
-	git commit -a -m "Bumping version to $(VERSION)"
+	git commit --allow-empty -a -m "Bumping version to $(VERSION)"
 	git tag -a v$(VERSION)
