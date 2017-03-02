@@ -19,12 +19,19 @@ test: lint
 	venv/bin/py.test tests/ -vsx --pdb
 
 release:
-	@git checkout $(VERSION)
-	rm dist/*
+	@git checkout v$(VERSION)
+	@-rm dist/*
 	venv/bin/python setup.py sdist bdist_wheel
-	twine upload dist/*.tar.gz
-	twine upload dist/*.whl
+	@read -n 1 -r -p "Release $(VERSION) to PyPI? " REPLY; \
+	if [ "$$REPLY" == "y" ]; then\
+		twine upload dist/*.tar.gz;\
+		twine upload dist/*.whl;\
+	else\
+		echo "Not uploading..";\
+	fi
 	git checkout $(GIT_BRANCH)
+
+fexx:
 
 release_test:
 	venv/bin/python setup.py sdist bdist_wheel upload -r pypitest
