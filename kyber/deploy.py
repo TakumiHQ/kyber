@@ -1,11 +1,9 @@
 """ kyber.deploy - logic and cli commands related to deploying a kyber project.
 """
 import click
-import json
-import pykube
 import time
 
-from .objects import App, Deployment, Environment
+from .objects import Deployment, Environment
 from .lib.kube import kube_api
 
 

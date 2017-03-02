@@ -1,6 +1,7 @@
 import click
 import os
 
+
 def write_envdir(cfg, target_dir):
     for param in sorted(cfg.keys()):
         with open(os.path.join(target_dir, param), "w") as out:

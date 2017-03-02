@@ -10,7 +10,11 @@ venv:
 clean:
 	rm -rf dist build kyber.egg-info
 
-test:
+lint:
+	venv/bin/flake8 kyber
+	venv/bin/flake8 tests
+
+test: lint
 	venv/bin/py.test tests/ -vsx --pdb
 
 release:

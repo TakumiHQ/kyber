@@ -1,6 +1,7 @@
 from kyber.objects.environment import kube_from_template
 from kyber.objects import App
 
+
 def test_kube_from_template():
     app = App('test-app', 'ecr.testing.test/test-app', 'git_test', 31337)
     secret = kube_from_template('secret', app)

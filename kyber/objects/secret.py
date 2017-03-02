@@ -41,10 +41,7 @@ class Secret(pykube.Secret):
         return unicode(repr(self))
 
     def has_key(self, k):
-        return self.obj['data'].has_key(k)
-
-    def pop(self, k, d=None):
-        return self.obj['data'].pop(k, d)
+        return self.obj['data'].has_key(k)  # noqa
 
     def keys(self):
         return self.obj['data'].keys()
@@ -58,8 +55,8 @@ class Secret(pykube.Secret):
     def iteritems(self):
         return self.obj['data'].iteritems()
 
-    def pop(self, *args):
-        return self.obj['data'].pop(*args)
+    def pop(self, *args, **kwargs):
+        return self.obj['data'].pop(*args, **kwargs)
 
     def update(self):
         """ Overload the pykube .update because it uses PATCH, while we
