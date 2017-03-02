@@ -1,15 +1,8 @@
 import click
 import os
-import sh
 from pykube.objects import Pod
 from kyber.lib.kube import kube_api
-
-
-def get_kubectl_path():
-    path = sh.which('kubectl')
-    if path is None:
-        raise Exception("Can't find kubectl executable, is it in your $PATH?")
-    return str(path)
+from kyber.utils import get_executable_path
 
 
 def run(name):
@@ -19,4 +12,4 @@ def run(name):
 
     click.echo("Running shell in pod `{}` in kube ctx `{}`".format(
                pod.name, kube_api.config.current_context))
-    os.execve(get_kubectl_path(), ["kubectl", "exec", "-i", "-t", pod.name, "/bin/bash"], os.environ)
+    os.execve(get_executable_path('kubectl'), ["kubectl", "exec", "-i", "-t", pod.name, "/bin/bash"], os.environ)

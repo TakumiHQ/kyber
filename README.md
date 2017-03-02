@@ -55,12 +55,13 @@ can be changed/disabled with `kubectl edit deployment {app name}`.
 - [status](#status)
 - [shell](#shell)
 - [completion](#completion)
+- [dash](#dash)
 
 ## init
 
 ### Initialize a project
 
-    (kb: dev) my-project (master) $ kb init
+    (kb: dev) my-project $ kb init
 
 Init checks to see if you have a local (copied) `.kyber/config` file which it
 can use to initialize the project against this kubernetes context, if a matching
@@ -79,7 +80,7 @@ file entry.
 
 ### Deploy another container to a project
 
-    (kb: dev) my-project (master) $ kb deploy [<tag defaults to tip of current branch>]
+    (kb: dev) my-project $ kb deploy [<tag defaults to tip of current branch>]
     ...
 
 
@@ -92,7 +93,7 @@ and unsetting individual values.
 
 ### list
 
-    (kb: dev) my-project (master) $ kb config list
+    (kb: dev) my-project $ kb config list
     SOME=variables
     ARE=more
     EQUAL=than
@@ -100,22 +101,22 @@ and unsetting individual values.
 
 ### get
 
-    (kb: dev) my-project (master) $ kb config get<TAB>
+    (kb: dev) my-project $ kb config get<TAB>
     ARE SOME EQUAL OTHERS
-    (kb: dev) my-project (master) $ kb config get ARE
+    (kb: dev) my-project $ kb config get ARE
     more
 
 ### set
 
-    (kb: dev) my-project (master) $ kb config set OTHERS 99%
-    (kb: dev) my-project (master) $ kb config get OTHERS
+    (kb: dev) my-project $ kb config set OTHERS 99%
+    (kb: dev) my-project $ kb config get OTHERS
     99%
 
 ### unset
 
-    (kb: dev) my-project (master) $ kb config unset OTHERS
+    (kb: dev) my-project $ kb config unset OTHERS
     Do you wish to delete config variable my-project.OTHERS with value of `99%` [y/N]:
-    (kb: dev) my-project (master) $ kb config get OTHERS
+    (kb: dev) my-project $ kb config get OTHERS
     No var found for `my-project.OTHERS`
 
 ### envdir
@@ -143,7 +144,7 @@ See the current kyber status of a project, most importantly the deployed tag,
 the docker registry/repo, and whether the tip of the current master is deployable
 (is there a docker named `{app.docker:git_{git.head()}}` in the ECR.
 
-    (kb: dev) my-project (master) $ kb status
+    (kb: dev) my-project $ kb status
     Project: my-project
     Docker: 12345.dkr.ecr.us-east-1.amazonaws.com/takumi-server
     Deployed tag: git_6eea5482b7f55823f86a63d9ddf6d84ec6769a78
@@ -155,9 +156,31 @@ Execute `/bin/bash` inside one of the pods in your app, useful for debugging.
 Will choose the first ready pod, or the last one returned if none are ready.
 Ready here refers to the kubernetes definition (liveness/readiness).
 
-    (kb: dev) my-project (master) $ kb shell
+    (kb: dev) my-project $ kb shell
     Running shell in pod `my-project-...` in kubectx `dev`
     root@bcd23f231d09:~#
+
+## dash
+
+Opens up the kubernetes-dashboard on the service object for the kyber app
+in the current context, or if called from outside a kyber context, it will
+open the pods dashboard for the current kubectl context.
+
+    (kb: dev) my-project $ kb dash
+    Opening dashboard for `my-project` in `dev`
+
+    (kb: dev) ~ $ kb dash
+    Not in a kyber context, showing dash for k8s pods in `dev`
+
+
+`dash` tries to use the command line program `open` which works on OS X, but
+on most linux distributions this will probably fail (`xdg-open` might be an
+alternative to look for and try).  If dash fails to find the `open` executable
+it will report back and print out the URL:
+
+    (kb: dev) my-project $ kb dash
+    Unable to launch dashboard automatically (Can't find 'open' executable, is it in your $PATH?)
+    URL: https://admin:***@api.kube-dev.you.org/api/v1/proxy/namespaces/kube-system/services/kubernetes-dashboard/#/service/dev/my-project?namespace=dev
 
 ## completion
 
