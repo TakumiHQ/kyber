@@ -33,6 +33,7 @@ def config_cli():
 @click.option('--force', '-f', default=False, is_flag=True)
 @context.required()
 def deploy_app(tag, force):
+    """ trigger a deployment """
     if tag is None:
         tag = context.tag
     if not tag.startswith('git_'):
@@ -50,6 +51,7 @@ def deploy_app(tag, force):
 
 @cli.command('init')
 def init_app():
+    """ create a new app, or sync with an existing one """
     cwd = os.path.abspath('.')
     repo = git.Repo(cwd)
     name = init.get_default_name(repo)
@@ -64,6 +66,7 @@ def init_app():
 @click.option('--skip-k8s', is_flag=True, default=False)
 @context.required()
 def get_status(skip_ecr, skip_k8s):
+    """ get the remote (k8s and ecr) status for the current kyber app context """
     app = App(context.name, context.docker, context.tag)
 
     click.echo("Project: {}".format(context.name))
@@ -82,6 +85,7 @@ def get_status(skip_ecr, skip_k8s):
 @cli.command('completion')
 @click.pass_context
 def get_completion(ctx):
+    """ dump a bash/zsh compatible kb completion script """
     available_commands = cli.list_commands(ctx)
     available_config_commands = config_cli.list_commands(ctx)
     raw_tpl = pkgutil.get_data('kyber', 'templates/kyber-completion.sh')
@@ -92,9 +96,11 @@ def get_completion(ctx):
 
 
 @cli.command('shell')
+@click.argument('shell_path', default='/bin/bash', required=False)
 @context.required()
-def run_shell():
-    shell.run(context.name)
+def run_shell(shell_path):
+    """ execute a shell in the first possible pod (defaults to /bin/bash) """
+    shell.run(context.name, shell_path)
 
 
 @cli.command('dash')
@@ -103,9 +109,17 @@ def open_dashboard():
     dash.launch()
 
 
+@cli.command('version')
+def show_version():
+    """ show the current kyber version """
+    from kyber._version import __version__
+    click.echo("Kyber version: {}".format(__version__))
+
+
 @config_cli.command('list')
 @context.required(checks=['config'])
 def config_list():
+    """ list configuration in var=value (envfile) format """
     env = Environment(context.name)
     cfg = env.secret
     for key in sorted(cfg.keys()):
@@ -116,6 +130,7 @@ def config_list():
 @click.argument('key')
 @context.required()
 def config_get(key):
+    """ get a single config variable """
     env = Environment(context.name)
     cfg = env.secret
     if key not in cfg:
@@ -129,6 +144,7 @@ def config_get(key):
 @click.argument('value')
 @context.required()
 def config_set(key, value):
+    """ set a single config variable"""
     env = Environment(context.name)
     cfg = env.secret
     cfg[key] = value
