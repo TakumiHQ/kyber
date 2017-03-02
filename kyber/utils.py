@@ -1,3 +1,4 @@
+import sh
 import time
 
 
@@ -28,3 +29,10 @@ class TimeIt(object):
     def __exit__(self, *args, **kwargs):
         self.end_t = time.time()
         print "{}: took {}s".format(self.name, self.end_t - self.start_t)
+
+
+def get_executable_path(executable):
+    path = sh.which(executable)
+    if path is None:
+        raise Exception("Can't find '{}' executable, is it in your $PATH?".format(executable))
+    return str(path)

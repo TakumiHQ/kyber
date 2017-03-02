@@ -112,4 +112,4 @@ def required(**ctx_kwargs):
     return wrapper
 
 
-__all__ = [required, name, docker, tag, target, dirty, dirty_reason]
+__all__ = [required, name, docker, tag, target, dirty, dirty_reason, Context]

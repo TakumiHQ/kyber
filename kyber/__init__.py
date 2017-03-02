@@ -6,6 +6,7 @@ from dulwich import porcelain as git
 from jinja2 import Template
 
 # logical modules
+import dash
 import deploy
 import config
 import context
@@ -94,6 +95,12 @@ def get_completion(ctx):
 @context.required()
 def run_shell():
     shell.run(context.name)
+
+
+@cli.command('dash')
+def open_dashboard():
+    """ Launch the kube-dashboard to see the pods running in the current kube context """
+    dash.launch()
 
 
 @config_cli.command('list')
