@@ -19,8 +19,7 @@ function __list_kube_contexts {
 }
 
 function kubes {
-	# a helper function to list kube contexts, which caches the output for
-	# 10 minutes
+	# a helper function to list kube contexts, which caches the output for 1 minute
 	rm -f `find $_CURRENT_KUBE_CONTEXT_FILE -type file -mtime +0h1m 2>/dev/null`
 	if [ ! -e $_CURRENT_KUBE_CONTEXT_FILE ]; then
 		__list_kube_contexts > $_CURRENT_KUBE_CONTEXT_FILE
