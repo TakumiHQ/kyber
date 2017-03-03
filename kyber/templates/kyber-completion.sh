@@ -1,5 +1,6 @@
 GREP_BIN=$(/usr/bin/which grep)
 ORIGINAL_PS1=$PS1
+_CURRENT_KUBE_CONTEXT_FILE=/tmp/kubectl-config-get-contexts.tmp
 
 function __kube_check {
 	kubectl > /dev/null 2>&1
@@ -16,10 +17,35 @@ function __kube_guard {
 function __list_kube_contexts {
 	kubectl config get-contexts
 }
-alias kubes=__list_kube_contexts
+
+function kubes {
+	# a helper function to list kube contexts, which caches the output for 1 minute
+	rm -f `find $_CURRENT_KUBE_CONTEXT_FILE -type file -mtime +0h1m 2>/dev/null`
+	if [ ! -e $_CURRENT_KUBE_CONTEXT_FILE ]; then
+		__list_kube_contexts > $_CURRENT_KUBE_CONTEXT_FILE
+	fi
+	cat $_CURRENT_KUBE_CONTEXT_FILE
+}
+
+# PS1 helpers
+function __get_current_kube_context_namespace {
+	kubes|$GREP_BIN '^*'|awk {'print $5'}
+}
+
+function __get_current_kube_context_cluster {
+        kubes|$GREP_BIN '^*'|awk {'print $3'}
+}
+
+function __get_current_kube_context_auth {
+	kubes|$GREP_BIN '^*'|awk {'print $4'}
+}
+
+function __get_current_kube_context_name {
+	kubes|$GREP_BIN '^*'|awk {'print $2'}
+}
 
 function __list_kube_context_names {
-	__list_kube_contexts|$GREP_BIN -v CURRENT|sed -e 's/^\*//'|awk {'print $1'}
+	kubes|$GREP_BIN -v CURRENT|sed -e 's/^\*//'|awk {'print $1'}
 }
 
 function __kube_context_compgen {
@@ -100,6 +126,7 @@ complete -F _kb_completion -o default kb;
 function kuse {
 	__kube_guard
 	unkubify
+	/bin/rm -f $_CURRENT_KUBE_CONTEXT_FILE
 	kubectl config use-context $1
 	kubify
 }
@@ -111,10 +138,10 @@ function kubify {
 	if [ "$?" != "0" ]; then
 		echo "can't access kubectl, is your PATH ok?"
 	fi
-	local __kube_cluster="`__list_kube_contexts |$GREP_BIN '^*'|awk {'print $3'}`"
-	local __kube_auth="`__list_kube_contexts |$GREP_BIN '^*'|awk {'print $4'}`"
-	local __kube_namespace="`__list_kube_contexts |$GREP_BIN '^*'|awk {'print $5'}`"
-	local __kube_context='`kubectl config current-context`'
+	local __kube_cluster='`__get_current_kube_context_cluster`'
+	local __kube_auth='`__get_current_kube_context_auth`'
+	local __kube_namespace='`__get_current_kube_context_namespace`'
+	local __kube_context='`__get_current_kube_context_name`'
 	local __prompt="(kb: $__kube_context"
 	if [ "$__kube_namespace" != "" ]; then
 		__prompt="$__prompt [$__kube_namespace]"
