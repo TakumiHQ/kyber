@@ -3,6 +3,7 @@ import os
 import pkgutil
 import sys
 from dulwich import porcelain as git
+from dulwich.errors import NotGitRepository
 from jinja2 import Template
 
 # logical modules
@@ -44,6 +45,8 @@ def deploy_app(tag, force):
         click.echo("Can't find a docker for {}\naborting..".format(app.image))
         return
 
+    click.confirm("About to deploy {} to {}, continue?".format(tag, context.name), abort=True)
+
     click.echo("Deploying {}".format(tag))
     deployment = deploy.execute(app, force)
     deploy.wait_for(deployment)
@@ -53,11 +56,24 @@ def deploy_app(tag, force):
 def init_app():
     """ create a new app, or sync with an existing one """
     cwd = os.path.abspath('.')
-    repo = git.Repo(cwd)
-    name = init.get_default_name(repo)
-    if name is None:
-        click.prompt("Unable to derive a name from the current git repository or directory!")
-        sys.exit(1)
+
+    try:
+        repo = git.Repo(cwd)
+        suggested_name = init.get_default_name(repo)
+    except NotGitRepository:
+        try:
+            repo = git.Repo.discover(cwd)
+        except NotGitRepository:
+            click.echo("No repository found")
+            sys.exit(1)
+        suggested_name = cwd.split('/')[-1]
+
+    if suggested_name is None:
+        click.echo("Unable to derive a name from the current git repository or directory!")
+        sys.exit(2)
+
+    name = click.prompt("Enter environment name".format(suggested_name), default=suggested_name)
+
     init.initialize(name, repo.head())
 
 
