@@ -32,16 +32,16 @@ def config_cli():
 @cli.command('deploy')
 @click.argument('tag', required=False)
 @click.option('--force', '-f', default=False, is_flag=True)
-@click.option('--no-prompt', 'prompt', default=True, is_flag=True)
+@click.option('--yes', '-y', default=False, is_flag=True)
 @context.required()
-def deploy_app(tag, force, prompt):
+def deploy_app(tag, force, yes):
     """ trigger a deployment """
     if tag is None:
         tag = context.tag
     if not tag.startswith('git_'):
         tag = 'git_{}'.format(tag)
 
-    if prompt:
+    if not yes:
         deployed_app = Environment(context.name).app
 
         click.echo("Project: {}".format(context.name))
@@ -49,7 +49,7 @@ def deploy_app(tag, force, prompt):
         click.echo("Deployed tag: {}".format(deployed_app.tag if deployed_app is not None else 'N/A'))
         click.echo("Tag to be deployed: {}".format(tag))
 
-        click.confirm("Continue?".format(tag, context.name), abort=True)
+        click.confirm("Continue?".format(tag, context.name), abort=True, default=True)
 
     app = App(context.name, context.docker, tag)
     if not ecr.image_exists(app.image):
