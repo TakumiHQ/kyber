@@ -58,15 +58,12 @@ def init_app():
     cwd = os.path.abspath('.')
 
     try:
-        repo = git.Repo(cwd)
-        suggested_name = init.get_default_name(repo)
+        repo = git.Repo.discover(cwd)
     except NotGitRepository:
-        try:
-            repo = git.Repo.discover(cwd)
-        except NotGitRepository:
-            click.echo("No repository found")
-            sys.exit(1)
-        suggested_name = cwd.split('/')[-1]
+        click.echo("No repository found")
+        sys.exit(1)
+
+    suggested_name = init.get_default_name(cwd)
 
     if suggested_name is None:
         click.echo("Unable to derive a name from the current git repository or directory!")
