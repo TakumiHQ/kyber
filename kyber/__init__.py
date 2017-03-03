@@ -32,20 +32,22 @@ def config_cli():
 @cli.command('deploy')
 @click.argument('tag', required=False)
 @click.option('--force', '-f', default=False, is_flag=True)
+@click.option('--no-prompt', 'prompt', default=True, is_flag=True)
 @context.required()
-def deploy_app(tag, force):
+def deploy_app(tag, force, prompt):
     """ trigger a deployment """
     if tag is None:
         tag = context.tag
     if not tag.startswith('git_'):
         tag = 'git_{}'.format(tag)
 
+    if prompt:
+        click.confirm("About to deploy {} to {}, continue?".format(tag, context.name), abort=True)
+
     app = App(context.name, context.docker, tag)
     if not ecr.image_exists(app.image):
         click.echo("Can't find a docker for {}\naborting..".format(app.image))
         return
-
-    click.confirm("About to deploy {} to {}, continue?".format(tag, context.name), abort=True)
 
     click.echo("Deploying {}".format(tag))
     deployment = deploy.execute(app, force)
@@ -64,7 +66,6 @@ def init_app():
         sys.exit(1)
 
     suggested_name = init.get_default_name(cwd)
-
     if suggested_name is None:
         click.echo("Unable to derive a name from the current git repository or directory!")
         sys.exit(2)
