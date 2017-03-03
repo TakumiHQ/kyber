@@ -42,7 +42,14 @@ def deploy_app(tag, force, prompt):
         tag = 'git_{}'.format(tag)
 
     if prompt:
-        click.confirm("About to deploy {} to {}, continue?".format(tag, context.name), abort=True)
+        deployed_app = Environment(context.name).app
+
+        click.echo("Project: {}".format(context.name))
+        click.echo("Docker: {}".format(context.docker))
+        click.echo("Deployed tag: {}".format(deployed_app.tag if deployed_app is not None else 'N/A'))
+        click.echo("Tag to be deployed: {}".format(tag))
+
+        click.confirm("Continue?".format(tag, context.name), abort=True)
 
     app = App(context.name, context.docker, tag)
     if not ecr.image_exists(app.image):
