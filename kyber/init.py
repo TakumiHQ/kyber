@@ -2,6 +2,9 @@ import click
 import os
 import yaml
 
+from dulwich import porcelain as git
+from dulwich.errors import NotGitRepository
+
 from kyber.objects import App, Environment
 from kyber.lib.kube import kube_api
 
@@ -52,18 +55,26 @@ class Config(object):
             cfg_file.write(yaml.safe_dump(config, default_flow_style=False))
 
 
-def get_default_name(repo):
-    # 1. try to find name from remote origin (ie. git@github.com:org/my-repo.git
-    try:
-        origin = repo.get_config()[('remote', 'origin')]['url']
-        dotgit = origin.split('/')[-1]
-        return dotgit.replace('.git', '')
-    except (KeyError, IndexError):
-        pass
+def get_default_name(cwd):
+    """ Return a default name for a directory, based on repo name or directory name """
 
-    # 2. use repo directory path
     try:
-        return repo.path.split('/')[-1]
+        repo = git.Repo(cwd)
+    except NotGitRepository:
+        repo = None
+
+    if repo is not None:
+        # Repo found, try to get repo name
+        try:
+            origin = repo.get_config()[('remote', 'origin')]['url']
+            dotgit = origin.split('/')[-1]
+            return dotgit.replace('.git', '')
+        except (KeyError, IndexError):
+            pass
+
+    # Not a repo, return folder name
+    try:
+        return cwd.split('/')[-1]
     except:
         pass
 

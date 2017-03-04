@@ -69,7 +69,8 @@ class Context(object):
     def git_status(self):
         from dulwich import porcelain as git
         try:
-            status = git.status()
+            repo = git.Repo.discover()
+            status = git.status(repo=repo)
         except dulwich.errors.NotGitRepository:
             raise ContextError("{} is not a valid git repository".format(self.cwd))
 
@@ -83,7 +84,7 @@ class Context(object):
 
     def git_tag(self):
         from dulwich import porcelain as git
-        repo = git.Repo(self.cwd)
+        repo = git.Repo.discover(self.cwd)
         self.tag = 'git_{}'.format(repo.head())
 
     def export(self):

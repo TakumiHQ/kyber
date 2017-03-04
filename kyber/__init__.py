@@ -3,6 +3,7 @@ import os
 import pkgutil
 import sys
 from dulwich import porcelain as git
+from dulwich.errors import NotGitRepository
 from jinja2 import Template
 
 # logical modules
@@ -31,13 +32,24 @@ def config_cli():
 @cli.command('deploy')
 @click.argument('tag', required=False)
 @click.option('--force', '-f', default=False, is_flag=True)
+@click.option('--yes', '-y', default=False, is_flag=True)
 @context.required()
-def deploy_app(tag, force):
+def deploy_app(tag, force, yes):
     """ trigger a deployment """
     if tag is None:
         tag = context.tag
     if not tag.startswith('git_'):
         tag = 'git_{}'.format(tag)
+
+    if not yes:
+        deployed_app = Environment(context.name).app
+
+        click.echo("Project: {}".format(context.name))
+        click.echo("Docker: {}".format(context.docker))
+        click.echo("Deployed tag: {}".format(deployed_app.tag if deployed_app is not None else 'N/A'))
+        click.echo("Tag to be deployed: {}".format(tag))
+
+        click.confirm("Continue?".format(tag, context.name), abort=True, default=True)
 
     app = App(context.name, context.docker, tag)
     if not ecr.image_exists(app.image):
@@ -53,11 +65,20 @@ def deploy_app(tag, force):
 def init_app():
     """ create a new app, or sync with an existing one """
     cwd = os.path.abspath('.')
-    repo = git.Repo(cwd)
-    name = init.get_default_name(repo)
-    if name is None:
-        click.prompt("Unable to derive a name from the current git repository or directory!")
+
+    try:
+        repo = git.Repo.discover(cwd)
+    except NotGitRepository:
+        click.echo("No repository found")
         sys.exit(1)
+
+    suggested_name = init.get_default_name(cwd)
+    if suggested_name is None:
+        click.echo("Unable to derive a name from the current git repository or directory!")
+        sys.exit(2)
+
+    name = click.prompt("Enter environment name".format(suggested_name), default=suggested_name)
+
     init.initialize(name, repo.head())
 
 
