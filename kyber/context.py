@@ -11,6 +11,7 @@ tag = None
 target = None
 dirty = None
 dirty_reason = None
+kube_ctx = None
 
 
 class ContextError(Exception):
@@ -62,6 +63,8 @@ class Context(object):
             raise ContextError(("No configuration found for kube context `{}` in kyber context."
                                 " Forgot to run 'kb init'?").format(kube_ctx))
 
+        self.kube_ctx = kube_api.config.contexts[kube_ctx]
+        self.kube_ctx['name'] = kube_ctx
         self.name = cfg[kube_ctx]['name']
         self.docker = cfg[kube_ctx]['docker']
         self.port = cfg[kube_ctx]['port']
@@ -88,13 +91,14 @@ class Context(object):
         self.tag = 'git_{}'.format(repo.head())
 
     def export(self):
-        global name, docker, tag, target, dirty, dirty_reason
+        global name, docker, tag, target, dirty, dirty_reason, kube_ctx
         name = self.name
         docker = self.docker
         tag = self.tag
         target = self.target
         dirty = self.git_dirty
         dirty_reason = self._git_status
+        kube_ctx = self.kube_ctx
 
 
 def required(**ctx_kwargs):
@@ -113,4 +117,4 @@ def required(**ctx_kwargs):
     return wrapper
 
 
-__all__ = [required, name, docker, tag, target, dirty, dirty_reason, Context]
+__all__ = [required, name, docker, tag, target, dirty, dirty_reason, kube_ctx, Context]
