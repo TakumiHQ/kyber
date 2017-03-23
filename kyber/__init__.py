@@ -41,10 +41,11 @@ def deploy_app(tag, force, yes):
         tag = context.tag
     if not tag.startswith('git_'):
         tag = 'git_{}'.format(tag)
+    context.tag = tag
 
     if not yes:
         status.echo(context)
-        click.confirm("Continue?".format(tag, context.name), abort=True, default=True)
+        click.confirm("Continue?", abort=True, default=True)
 
     app = App(context.name, context.docker, tag)
     if not ecr.image_exists(app.image):
