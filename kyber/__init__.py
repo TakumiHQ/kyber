@@ -13,6 +13,7 @@ import config
 import context
 import init
 import shell
+import status
 
 # objects and helpers
 from objects import App, Environment
@@ -40,16 +41,11 @@ def deploy_app(tag, force, yes):
         tag = context.tag
     if not tag.startswith('git_'):
         tag = 'git_{}'.format(tag)
+    context.tag = tag
 
     if not yes:
-        deployed_app = Environment(context.name).app
-
-        click.echo("Project: {}".format(context.name))
-        click.echo("Docker: {}".format(context.docker))
-        click.echo("Deployed tag: {}".format(deployed_app.tag if deployed_app is not None else 'N/A'))
-        click.echo("Tag to be deployed: {}".format(tag))
-
-        click.confirm("Continue?".format(tag, context.name), abort=True, default=True)
+        status.echo(context)
+        click.confirm("Continue?", abort=True, default=True)
 
     app = App(context.name, context.docker, tag)
     if not ecr.image_exists(app.image):
@@ -88,19 +84,7 @@ def init_app():
 @context.required()
 def get_status(skip_ecr, skip_k8s):
     """ get the remote (k8s and ecr) status for the current kyber app context """
-    app = App(context.name, context.docker, context.tag)
-
-    click.echo("Project: {}".format(context.name))
-    click.echo("Docker: {}".format(context.docker))
-    if not skip_k8s:
-        deployed_app = Environment(context.name).app
-        click.echo("Deployed tag: {}".format(deployed_app.tag if deployed_app is not None else 'N/A'))
-
-    deployable = '?'
-    if not skip_ecr:
-        deployable = 'y' if ecr.image_exists(app.image) else 'n'
-
-    click.echo("Current tag: {} [deployable: {}]".format(context.tag, deployable))
+    status.echo(context, skip_ecr, skip_k8s)
 
 
 @cli.command('completion')
