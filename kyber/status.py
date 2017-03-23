@@ -3,7 +3,7 @@ import click
 from objects import App, Environment
 from lib import ecr
 
-def echo(context, skip_k8s, skip_ecr):
+def echo(context, skip_k8s=False, skip_ecr=False):
     """ get the remote (k8s and ecr) status for the current kyber app context """
     app = App(context.name, context.docker, context.tag)
 
