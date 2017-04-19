@@ -78,7 +78,7 @@ class OrderedLog(PriorityQueue):
         return string
 
 
-def get(app, pod=None):
+def get(app, pod, since_seconds, keep_timestamp):
     pods = []
     if pod is None:
         for pod in Pod.objects(kube_api).filter(selector={'app': app}).iterator():
@@ -89,9 +89,9 @@ def get(app, pod=None):
         except ObjectDoesNotExist:
             click.echo(u"Can't find a pod named `{}`".format(pod))
 
-    ols = OrderedLog(keep_timestamp=True)
+    ols = OrderedLog(keep_timestamp)
     for pod in pods:
-        pod_logs = pod.logs(timestamps=True, since_seconds=3600)
+        pod_logs = pod.logs(timestamps=True, since_seconds=since_seconds)
         for line in pod_logs.split('\n'):
             ols.push(pod.name, line)
 
