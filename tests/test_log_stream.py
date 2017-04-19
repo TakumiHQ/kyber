@@ -19,6 +19,15 @@ def test_priority_queue_returns_lowest_priority():
     assert pq.pop() == (1, 0, 'test')
 
 
+def test_priority_queue_empty():
+    pq = PriorityQueue()
+    assert pq.empty is True
+    pq.push(0, 'test')
+    assert pq.empty is False
+    pq.pop()
+    assert pq.empty is True
+
+
 def test_parse_logentry():
     timestamp = '1970-01-01T00:00:00Z'
     log_string = '[mock system] mock log entry'

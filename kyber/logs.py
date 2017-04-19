@@ -18,10 +18,14 @@ class PriorityQueue(object):
 
     @property
     def count(self):
-        return next(self.counter)
+        return len(self.heap)
+
+    @property
+    def empty(self):
+        return self.count == 0
 
     def push(self, ts, value):
-        heapq.heappush(self.heap, (ts, self.count, value))
+        heapq.heappush(self.heap, (ts, next(self.counter), value))
 
     def pop(self):
         return heapq.heappop(self.heap)
@@ -85,5 +89,11 @@ def get(app, pod=None):
         except ObjectDoesNotExist:
             click.echo(u"Can't find a pod named `{}`".format(pod))
 
-    click.echo("pods:")
-    click.echo(pods)
+    ols = OrderedLogStream(keep_timestamp=True)
+    for pod in pods:
+        pod_logs = pod.logs(timestamps=True, since_seconds=3600)
+        for line in pod_logs.split('\n'):
+            ols.push(pod.name, line)
+
+    while not ols.empty:
+        click.echo(ols.pop())
