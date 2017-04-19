@@ -70,6 +70,14 @@ function __list_kb_config_keys {
 	cmdcache kb config list |cut -d= -f1
 }
 
+function __kb_status {
+        CMDCACHE_MAX_AGE=30 cmdcache kb status --skip-ecr --skip-k8s
+}
+
+function __kyber_list_pods {
+        project=$(__kb_status |$GREP_BIN Project:|cut -d: -f2|sed -e 's/ //')
+        cmdcache kubectl get pods -l app=$project -o name|cut -d/ -f2
+}
 
 function __kyber_deploy_compgen {
 	local cur
@@ -79,6 +87,26 @@ function __kyber_deploy_compgen {
 	else
 		COMPREPLY=( $( __list_kb_deploy_targets ) )
 	fi
+}
+
+function __kyber_logs_compgen {
+        local cur
+        cur=${COMP_WORDS[COMP_CWORD]}
+        if [[ "$cur" != "" ]]; then
+                if [[ $cur == -* ]]; then
+                        if [[ $cur == --s* ]]; then
+                                COMPREPLY=( --skip-seconds )
+                        elif [[ $cur == --k* ]]; then
+                                COMPREPLY=( --keep-timestamps )
+                        else
+                                COMPREPLY=(--skip-seconds --keep-timestamps)
+                        fi
+                else
+                        COMPREPLY=( $( __list_kb_pods |$GREP_BIN "^$cur" ) )
+                fi
+        else
+                COMPREPLY=( $( __list_kb_pods ) )
+        fi
 }
 
 function __kyber_config_compgen {
@@ -116,6 +144,8 @@ function __kyber_compgen {
 		fi
 	elif [[ $prev == "deploy" ]]; then
 		__kyber_deploy_compgen
+        elif [[ $prev == "logs" ]]; then
+                __kyber_logs_compgen
 	elif [[ $prev == "config" || $pprev == "config" ]]; then
 		__kyber_config_compgen
 	fi
