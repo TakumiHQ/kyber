@@ -24,8 +24,8 @@ class PriorityQueue(object):
     def empty(self):
         return self.count == 0
 
-    def push(self, ts, value):
-        heapq.heappush(self.heap, (ts, next(self.counter), value))
+    def push(self, priority, value):
+        heapq.heappush(self.heap, (priority, next(self.counter), value))
 
     def pop(self):
         return heapq.heappop(self.heap)
@@ -41,7 +41,7 @@ def parse_logentry(logentry):
     return (ts, rest)
 
 
-class OrderedLogStream(PriorityQueue):
+class OrderedLog(PriorityQueue):
     """ store log entries in a heap ordered by the timestamp
     - can optionally keep the timestamp as part of the log string
     - can warn if unable to parse a timestamp, in which case all log entries
@@ -56,7 +56,7 @@ class OrderedLogStream(PriorityQueue):
         self.keep_timestamp = keep_timestamp
         self.verbose = verbose
 
-        super(OrderedLogStream, self).__init__()
+        super(OrderedLog, self).__init__()
 
     def push(self, pod, logentry):
         try:
@@ -71,10 +71,10 @@ class OrderedLogStream(PriorityQueue):
             pod=pod,
             entry=logentry if self.keep_timestamp else logstring
         )
-        super(OrderedLogStream, self).push(ts, store_string)
+        super(OrderedLog, self).push(ts, store_string)
 
     def pop(self):
-        (ts, priority, string) = super(OrderedLogStream, self).pop()
+        (ts, priority, string) = super(OrderedLog, self).pop()
         return string
 
 
@@ -89,7 +89,7 @@ def get(app, pod=None):
         except ObjectDoesNotExist:
             click.echo(u"Can't find a pod named `{}`".format(pod))
 
-    ols = OrderedLogStream(keep_timestamp=True)
+    ols = OrderedLog(keep_timestamp=True)
     for pod in pods:
         pod_logs = pod.logs(timestamps=True, since_seconds=3600)
         for line in pod_logs.split('\n'):

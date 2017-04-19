@@ -1,6 +1,6 @@
 import mock
 
-from kyber.logs import PriorityQueue, OrderedLogStream, parse_logentry
+from kyber.logs import PriorityQueue, OrderedLog, parse_logentry
 
 
 def test_priority_queue_uses_count_to_tiebreak():
@@ -38,33 +38,33 @@ def test_parse_logentry():
 
 
 def test_ordered_log_stream_calls_parse_logentry():
-    ols = OrderedLogStream()
+    ol = OrderedLog()
     with mock.patch('kyber.logs.parse_logentry') as mock_parse_logentry:
         mock_parse_logentry.return_value = [0, 'test']
-        ols.push('mockpod', 'hello')
+        ol.push('mockpod', 'hello')
     assert mock_parse_logentry.called is True
-    assert ols.pop() == 'mockpod: test'
+    assert ol.pop() == 'mockpod: test'
 
 
 def test_ordered_log_stream_with_two_timestamps():
     timestamp1 = '1970-01-01T00:00:00Z'
     timestamp2 = '1970-01-01T00:00:01Z'
-    ols = OrderedLogStream()
-    ols.push('mockpod', '{} mock younger'.format(timestamp2))
-    ols.push('mockpod', '{} mock older'.format(timestamp1))
-    assert ols.pop() == 'mockpod: mock older'
+    ol = OrderedLog()
+    ol.push('mockpod', '{} mock younger'.format(timestamp2))
+    ol.push('mockpod', '{} mock older'.format(timestamp1))
+    assert ol.pop() == 'mockpod: mock older'
 
 
 def test_ordered_log_stream_with_keep_timestamp():
     timestamp = '1970-01-01T00:00:00Z'
-    ols = OrderedLogStream(keep_timestamp=True)
-    ols.push('mockpod', '{} mock'.format(timestamp))
-    assert ols.pop() == 'mockpod: {} mock'.format(timestamp)
+    ol = OrderedLog(keep_timestamp=True)
+    ol.push('mockpod', '{} mock'.format(timestamp))
+    assert ol.pop() == 'mockpod: {} mock'.format(timestamp)
 
 
 def test_ordered_log_stream_verbose_calls_click_echo_on_timestamp_parse_error():
-    ols = OrderedLogStream(verbose=True)
+    ol = OrderedLog(verbose=True)
     with mock.patch('kyber.logs.click.echo') as mock_echo:
-        ols.push('mockpod', 'meh mock')
+        ol.push('mockpod', 'meh mock')
         assert mock_echo.called
-        assert ols.pop() == 'mockpod: meh mock'
+        assert ol.pop() == 'mockpod: meh mock'
