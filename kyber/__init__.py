@@ -90,9 +90,9 @@ def get_status(skip_ecr, skip_k8s):
 
 @cli.command('logs')
 @click.argument('pod', default=None, required=False)
-@click.option('--since-seconds', default=3600, required=False)
+@click.option('--since-seconds', '-s', default=3600, required=False)
 @click.option('--keep-timestamps', default=True, required=False)
-@click.option('--follow', default=None, required=False, is_flag=True)
+@click.option('--follow', '-f', default=None, required=False, is_flag=True)
 @context.required()
 def get_logs(pod, since_seconds, keep_timestamps, follow):
     logs.get(context.name, pod, since_seconds, keep_timestamps, follow)
