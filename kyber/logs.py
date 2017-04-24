@@ -7,6 +7,7 @@ import time
 from pykube.objects import ObjectDoesNotExist
 from kyber.lib.kube import kube_api
 from kyber.objects import Pod
+from kyber.utils import multiplex
 
 
 class PriorityQueue(object):
@@ -83,31 +84,10 @@ def format_log_string(pod, logentry, logstring, keep_timestamp):
     )
 
 
-import Queue, threading
-def gen_multiplex(genlist):
-    item_q = Queue.Queue()
-    def run_one(label, source):
-        for item in source: item_q.put([label, item])
-
-    def run_all():
-        thrlist = []
-        for label, source in genlist:
-            t = threading.Thread(target=run_one,args=(label, source,))
-            t.start()
-            thrlist.append(t)
-        for t in thrlist: t.join()
-        item_q.put(StopIteration)
-
-    threading.Thread(target=run_all).start()
-    while True:
-        label, item = item_q.get()
-        if item is StopIteration: return
-        yield label, item
-
-
 def get(app, pod, since_seconds, keep_timestamp, follow):
     pods = []
     start_t = time.time()
+    kwargs = {'since_seconds': since_seconds, 'timestamps': True}
     if pod is None:
         for pod in Pod.objects(kube_api).filter(selector={'app': app}).iterator():
             pods.append(pod)
@@ -119,7 +99,7 @@ def get(app, pod, since_seconds, keep_timestamp, follow):
 
     ols = OrderedLog(keep_timestamp)
     for pod in pods:
-        pod_logs = pod.logs(timestamps=True, since_seconds=since_seconds)
+        pod_logs = pod.logs(**kwargs)
         for line in pod_logs.split('\n'):
             ols.push(pod.name, line)
 
@@ -128,9 +108,10 @@ def get(app, pod, since_seconds, keep_timestamp, follow):
 
     if follow is True:
         elapsed = time.time() - start_t
-        streams = []
-        for pod in pods:
-            streams.append([pod, pod.logs(timestamps=True, since_seconds=elapsed, follow=follow).iter_lines(chunk_size=10)])
+        kwargs['follow'] = follow
+        kwargs['since_seconds'] = elapsed
+        streams = [pod.logs(**kwargs) for pod in pods]
+        labels = [pod.name for pod in pods]
 
-        for pod, message in gen_multiplex(streams):
+        for pod, message in multiplex(streams, labels):
             click.echo(format_log_string(pod, message, message, keep_timestamp))
