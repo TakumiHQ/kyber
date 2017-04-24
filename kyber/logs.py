@@ -4,8 +4,9 @@ import iso8601
 import itertools
 import time
 
-from pykube.objects import Pod, ObjectDoesNotExist
+from pykube.objects import ObjectDoesNotExist
 from kyber.lib.kube import kube_api
+from kyber.objects import Pod
 
 
 class PriorityQueue(object):
@@ -67,10 +68,7 @@ class OrderedLog(PriorityQueue):
                            u"Error: {}".format(logentry, e))
             (ts, logstring) = 0, logentry
 
-        store_string = '{pod}: {entry}'.format(
-            pod=pod,
-            entry=logentry if self.keep_timestamp else logstring
-        )
+        store_string = format_log_string(pod, logentry, logstring, self.keep_timestamp)
         super(OrderedLog, self).push(ts, store_string)
 
     def pop(self):
@@ -78,8 +76,38 @@ class OrderedLog(PriorityQueue):
         return string
 
 
-def get(app, pod, since_seconds, keep_timestamp):
+def format_log_string(pod, logentry, logstring, keep_timestamp):
+    return '{pod}: {entry}'.format(
+        pod=pod,
+        entry=logentry if keep_timestamp else logstring
+    )
+
+
+import Queue, threading
+def gen_multiplex(genlist):
+    item_q = Queue.Queue()
+    def run_one(label, source):
+        for item in source: item_q.put([label, item])
+
+    def run_all():
+        thrlist = []
+        for label, source in genlist:
+            t = threading.Thread(target=run_one,args=(label, source,))
+            t.start()
+            thrlist.append(t)
+        for t in thrlist: t.join()
+        item_q.put(StopIteration)
+
+    threading.Thread(target=run_all).start()
+    while True:
+        label, item = item_q.get()
+        if item is StopIteration: return
+        yield label, item
+
+
+def get(app, pod, since_seconds, keep_timestamp, follow):
     pods = []
+    start_t = time.time()
     if pod is None:
         for pod in Pod.objects(kube_api).filter(selector={'app': app}).iterator():
             pods.append(pod)
@@ -97,3 +125,12 @@ def get(app, pod, since_seconds, keep_timestamp):
 
     while not ols.empty:
         click.echo(ols.pop())
+
+    if follow is True:
+        elapsed = time.time() - start_t
+        streams = []
+        for pod in pods:
+            streams.append([pod, pod.logs(timestamps=True, since_seconds=elapsed, follow=follow).iter_lines(chunk_size=10)])
+
+        for pod, message in gen_multiplex(streams):
+            click.echo(format_log_string(pod, message, message, keep_timestamp))
