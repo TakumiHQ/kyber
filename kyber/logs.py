@@ -1,6 +1,7 @@
 import click
 import iso8601
 import itertools
+import threading
 import time
 import Queue
 
@@ -60,17 +61,61 @@ class TimestampOrderedQueue(object):
                            u"Error: {}".format(logentry, e))
             (ts, logstring) = 0, logentry
 
-        store_string = format_log_string(pod, logentry, logstring, self.keep_timestamp)
-        self.pq.put((ts, next(self.counter), store_string))
+        if isinstance(logentry, basestring):
+            item = format_log_string(pod, logentry, logstring, self.keep_timestamp)
+
+        self.pq.put((ts, next(self.counter), item))
 
     def get_raw(self, *args, **kwargs):
         return self.pq.get(*args, **kwargs)
 
     def get(self, *args, **kwargs):
-        """ Return just the formatted string, but pass on *args and **kwargs
+        """ Return just the item, but pass on *args and **kwargs
         to allow timeouts, etc """
-        (priority, index, string) = self.pq.get(*args, **kwargs)
-        return string
+        (priority, index, item) = self.pq.get(*args, **kwargs)
+        return item
+
+
+class LogStream(object):
+    def __init__(self, pod, source):
+        self.pod = pod
+        self.source = source
+
+
+class LogMultiplexer(object):
+    def __init__(self, queue):
+        self.queue = queue
+        self.streams = []
+        self.threads = []
+        self.master = threading.Thread(target=self.run_all, args=(self,))
+        self.master.daemon = True
+
+    def add_stream(self, stream):
+        self.streams.append(stream)
+
+    def run_one(self, stream):
+        for item in stream.source:
+            self.queue.put(stream.pod, item)
+
+    def run_all(self):
+        for stream in self.streams:
+            t = threading.Thread(target=self.run_one, args=(self, stream, ))
+            t.daemon = True
+            t.start()
+            self.threads.append(t)
+
+        for t in self.threads:
+            t.join()
+        self.queue.put('', StopIteration)
+        self.master.start()
+
+    def get(self):
+        while True:
+            item = self.queue.get()
+            if item is StopIteration:
+                self.master.join()
+                return
+            yield item
 
 
 def format_log_string(pod, logentry, logstring, keep_timestamp):
