@@ -106,7 +106,6 @@ class LogMultiplexer(object):
     def run_one(self, stream):
         for item in stream.source:
             self.queue.put(stream.pod, item)
-        print stream, "is done"
 
     def run_all(self):
         for stream in self.streams:
