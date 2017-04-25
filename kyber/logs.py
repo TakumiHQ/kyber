@@ -8,7 +8,6 @@ import Queue
 from pykube.objects import ObjectDoesNotExist
 from kyber.lib.kube import kube_api
 from kyber.objects import Pod
-from kyber.utils import multiplex
 
 
 def parse_logentry(logentry):
@@ -63,6 +62,8 @@ class TimestampOrderedQueue(object):
 
         if isinstance(logentry, basestring):
             item = format_log_string(pod, logentry, logstring, self.keep_timestamp)
+        else:
+            item = logentry
 
         self.pq.put((ts, next(self.counter), item))
 
@@ -81,25 +82,32 @@ class LogStream(object):
         self.pod = pod
         self.source = source
 
+    def __repr__(self):
+        return u'<LogStream({})>'.format(self.pod)
+
 
 class LogMultiplexer(object):
+    """ adapted from http://www.dabeaz.com/generators/genmulti.py
+    setting all threads to daemon so they'll get mercilessly killed on SIGINT / SIGTERM
+    """
     def __init__(self, queue):
         self.queue = queue
         self.streams = []
         self.threads = []
-        self.master = threading.Thread(target=self.run_all, args=(self,))
+        self.master = threading.Thread(target=self.run_all)
         self.master.daemon = True
 
-    def add_stream(self, stream):
-        self.streams.append(stream)
+    def add_stream(self, pod, stream):
+        self.streams.append(LogStream(pod, stream))
 
     def run_one(self, stream):
         for item in stream.source:
             self.queue.put(stream.pod, item)
+        print stream, "is done"
 
     def run_all(self):
         for stream in self.streams:
-            t = threading.Thread(target=self.run_one, args=(self, stream, ))
+            t = threading.Thread(target=self.run_one, args=(stream, ))
             t.daemon = True
             t.start()
             self.threads.append(t)
@@ -107,6 +115,8 @@ class LogMultiplexer(object):
         for t in self.threads:
             t.join()
         self.queue.put('', StopIteration)
+
+    def start(self):
         self.master.start()
 
     def get(self):
@@ -137,21 +147,10 @@ def get(app, pod, since_seconds, keep_timestamp, follow):
             click.echo(u"Can't find a pod named `{}`".format(pod))
 
     queue = TimestampOrderedQueue(keep_timestamp)
-    kwargs = {'since_seconds': since_seconds, 'timestamps': True}
+    multiplexer = LogMultiplexer(queue)
     for pod in pods:
-        pod_logs = pod.logs(**kwargs)
-        for line in pod_logs:
-            queue.put(pod.name, line)
-
-    while not queue.empty:
-        click.echo(queue.get())
-
-    if follow is True:
-        elapsed = 30
-        kwargs['follow'] = follow
-        kwargs['since_seconds'] = elapsed
-        streams = [pod.logs(**kwargs) for pod in pods]
-        labels = [pod.name for pod in pods]
-
-        for pod, message in multiplex(streams, labels):
-            click.echo(format_log_string(pod, message, message, keep_timestamp))
+        pod_logs = pod.logs(since_seconds=since_seconds, timestamps=True, follow=follow)
+        multiplexer.add_stream(pod.name, pod_logs)
+    multiplexer.start()
+    for entry in multiplexer.get():
+        click.echo(entry)
