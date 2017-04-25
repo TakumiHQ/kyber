@@ -1,8 +1,8 @@
 import click
-import heapq
 import iso8601
 import itertools
 import time
+import Queue
 
 from pykube.objects import ObjectDoesNotExist
 from kyber.lib.kube import kube_api
@@ -15,22 +15,22 @@ class PriorityQueue(object):
     values.
     """
     def __init__(self):
-        self.heap = []
+        self.pq = Queue.PriorityQueue()
         self.counter = itertools.count()
 
     @property
     def count(self):
-        return len(self.heap)
+        return pq.qsize()
 
     @property
     def empty(self):
-        return self.count == 0
+        return self.pq.empty()
 
-    def push(self, priority, value):
-        heapq.heappush(self.heap, (priority, next(self.counter), value))
+    def put(self, priority, value):
+        self.pq.put((priority, next(self.counter), value))
 
-    def pop(self):
-        return heapq.heappop(self.heap)
+    def get(self, *args, **kwargs):
+        return self.pq.get(*args, **kwargs)
 
 
 def parse_logentry(logentry):
@@ -60,7 +60,7 @@ class OrderedLog(PriorityQueue):
 
         super(OrderedLog, self).__init__()
 
-    def push(self, pod, logentry):
+    def put(self, pod, logentry):
         try:
             (ts, logstring) = parse_logentry(logentry)
         except Exception as e:
@@ -70,10 +70,10 @@ class OrderedLog(PriorityQueue):
             (ts, logstring) = 0, logentry
 
         store_string = format_log_string(pod, logentry, logstring, self.keep_timestamp)
-        super(OrderedLog, self).push(ts, store_string)
+        super(OrderedLog, self).put(ts, store_string)
 
-    def pop(self):
-        (ts, priority, string) = super(OrderedLog, self).pop()
+    def get(self):
+        (ts, priority, string) = super(OrderedLog, self).get()
         return string
 
 
@@ -86,8 +86,6 @@ def format_log_string(pod, logentry, logstring, keep_timestamp):
 
 def get(app, pod, since_seconds, keep_timestamp, follow):
     pods = []
-    start_t = time.time()
-    kwargs = {'since_seconds': since_seconds, 'timestamps': True}
     if pod is None:
         for pod in Pod.objects(kube_api).filter(selector={'app': app}).iterator():
             pods.append(pod)
@@ -98,13 +96,14 @@ def get(app, pod, since_seconds, keep_timestamp, follow):
             click.echo(u"Can't find a pod named `{}`".format(pod))
 
     ols = OrderedLog(keep_timestamp)
+    kwargs = {'since_seconds': since_seconds, 'timestamps': True}
     for pod in pods:
         pod_logs = pod.logs(**kwargs)
-        for line in pod_logs.split('\n'):
-            ols.push(pod.name, line)
+        for line in pod_logs:
+            ols.put(pod.name, line)
 
     while not ols.empty:
-        click.echo(ols.pop())
+        click.echo(ols.get())
 
     if follow is True:
         elapsed = time.time() - start_t
