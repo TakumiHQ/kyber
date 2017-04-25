@@ -45,6 +45,7 @@ can be changed/disabled with `kubectl edit deployment {app name}`.
 
 - [init](#init) - initialize a project
 - [deploy](#deploy)
+- [logs](#logs)
 - [config](#config)
   - [list](#list)
   - [get](#get)
@@ -83,6 +84,23 @@ file entry.
     (kb: dev) my-project $ kb deploy [<tag defaults to tip of current branch>]
     ...
 
+
+## logs
+
+### Get pod logs
+
+Streams logs from one or all of the pods in the current kyber app. Does not support
+all the parameters offered by `kubectl logs`, only `-s/--since-seconds` and
+`-f/--follow` are supported.
+
+Also adds a `-k/--keep-timestamps` option to show the ISO-8601 timestamps provided
+by k8s and used to order the logs.
+
+    (kb: dev) my-project $ kb logs -k -f
+    my-project-875882650-c4wmp: 2017-04-25T14:00:01 ...
+    my-project-875882650-dt2cp: 2017-04-25T14:00:02 ...
+    my-project-875882650-c4wmp: 2017-04-25T14:00:03 ...
+    my-project-875882650-dt2cp: 2017-04-25T14:00:04 ...
 
 ## config
 
