@@ -61,7 +61,10 @@ class TimestampOrderedQueue(object):
             (ts, logstring) = 0, logentry
 
         if isinstance(logentry, basestring):
-            item = format_log_string(pod, logentry, logstring, self.keep_timestamp)
+            item = '{pod}: {entry}'.format(
+                pod=pod,
+                entry=logentry if self.keep_timestamp else logstring
+            )
         else:
             item = logentry
 
@@ -126,13 +129,6 @@ class LogMultiplexer(object):
                 self.master.join()
                 return
             yield item
-
-
-def format_log_string(pod, logentry, logstring, keep_timestamp):
-    return '{pod}: {entry}'.format(
-        pod=pod,
-        entry=logentry if keep_timestamp else logstring
-    )
 
 
 def get(app, pod, since_seconds, keep_timestamp, follow):
