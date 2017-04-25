@@ -10,29 +10,6 @@ from kyber.objects import Pod
 from kyber.utils import multiplex
 
 
-class PriorityQueue(object):
-    """ Basic priority queue backed by a heap + a counter to tiebreak same-priority
-    values.
-    """
-    def __init__(self):
-        self.pq = Queue.PriorityQueue()
-        self.counter = itertools.count()
-
-    @property
-    def count(self):
-        return pq.qsize()
-
-    @property
-    def empty(self):
-        return self.pq.empty()
-
-    def put(self, priority, value):
-        self.pq.put((priority, next(self.counter), value))
-
-    def get(self, *args, **kwargs):
-        return self.pq.get(*args, **kwargs)
-
-
 def parse_logentry(logentry):
     """ Parse a log entry of fmt: `<iso8601> <log string>\n`
 
@@ -43,13 +20,21 @@ def parse_logentry(logentry):
     return (ts, rest)
 
 
-class OrderedLog(PriorityQueue):
-    """ store log entries in a heap ordered by the timestamp
+class TimestampOrderedQueue(object):
+    """
+    Stores log entries in a PriorityQueue and calculates the priority
+    from an iso8601 timestamp at the beginning of every logentry.
+    Values are returned in an oldest-first order, and equal timestamps
+    are returned FIFO.
+
     - can optionally keep the timestamp as part of the log string
     - can warn if unable to parse a timestamp, in which case all log entries
       get the same priority (0) as no timestamp could be found.
     """
     def __init__(self, keep_timestamp=None, verbose=None):
+        self.pq = Queue.PriorityQueue()
+        self.counter = itertools.count()
+
         if keep_timestamp is None:
             keep_timestamp = False
         if verbose is None:
@@ -58,7 +43,13 @@ class OrderedLog(PriorityQueue):
         self.keep_timestamp = keep_timestamp
         self.verbose = verbose
 
-        super(OrderedLog, self).__init__()
+    @property
+    def count(self):
+        return self.pq.qsize()
+
+    @property
+    def empty(self):
+        return self.pq.empty()
 
     def put(self, pod, logentry):
         try:
@@ -70,10 +61,15 @@ class OrderedLog(PriorityQueue):
             (ts, logstring) = 0, logentry
 
         store_string = format_log_string(pod, logentry, logstring, self.keep_timestamp)
-        super(OrderedLog, self).put(ts, store_string)
+        self.pq.put((ts, next(self.counter), store_string))
 
-    def get(self):
-        (ts, priority, string) = super(OrderedLog, self).get()
+    def get_raw(self, *args, **kwargs):
+        return self.pq.get(*args, **kwargs)
+
+    def get(self, *args, **kwargs):
+        """ Return just the formatted string, but pass on *args and **kwargs
+        to allow timeouts, etc """
+        (priority, index, string) = self.pq.get(*args, **kwargs)
         return string
 
 
@@ -95,18 +91,18 @@ def get(app, pod, since_seconds, keep_timestamp, follow):
         except ObjectDoesNotExist:
             click.echo(u"Can't find a pod named `{}`".format(pod))
 
-    ols = OrderedLog(keep_timestamp)
+    queue = TimestampOrderedQueue(keep_timestamp)
     kwargs = {'since_seconds': since_seconds, 'timestamps': True}
     for pod in pods:
         pod_logs = pod.logs(**kwargs)
         for line in pod_logs:
-            ols.put(pod.name, line)
+            queue.put(pod.name, line)
 
-    while not ols.empty:
-        click.echo(ols.get())
+    while not queue.empty:
+        click.echo(queue.get())
 
     if follow is True:
-        elapsed = time.time() - start_t
+        elapsed = 30
         kwargs['follow'] = follow
         kwargs['since_seconds'] = elapsed
         streams = [pod.logs(**kwargs) for pod in pods]
