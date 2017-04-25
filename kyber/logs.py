@@ -1,34 +1,13 @@
 import click
-import heapq
 import iso8601
 import itertools
+import threading
 import time
+import Queue
 
-from pykube.objects import Pod, ObjectDoesNotExist
+from pykube.objects import ObjectDoesNotExist
 from kyber.lib.kube import kube_api
-
-
-class PriorityQueue(object):
-    """ Basic priority queue backed by a heap + a counter to tiebreak same-priority
-    values.
-    """
-    def __init__(self):
-        self.heap = []
-        self.counter = itertools.count()
-
-    @property
-    def count(self):
-        return len(self.heap)
-
-    @property
-    def empty(self):
-        return self.count == 0
-
-    def push(self, priority, value):
-        heapq.heappush(self.heap, (priority, next(self.counter), value))
-
-    def pop(self):
-        return heapq.heappop(self.heap)
+from kyber.objects import Pod
 
 
 def parse_logentry(logentry):
@@ -41,13 +20,21 @@ def parse_logentry(logentry):
     return (ts, rest)
 
 
-class OrderedLog(PriorityQueue):
-    """ store log entries in a heap ordered by the timestamp
+class TimestampOrderedQueue(object):
+    """
+    Stores log entries in a PriorityQueue and calculates the priority
+    from an iso8601 timestamp at the beginning of every logentry.
+    Values are returned in an oldest-first order, and equal timestamps
+    are returned FIFO.
+
     - can optionally keep the timestamp as part of the log string
     - can warn if unable to parse a timestamp, in which case all log entries
       get the same priority (0) as no timestamp could be found.
     """
     def __init__(self, keep_timestamp=None, verbose=None):
+        self.pq = Queue.PriorityQueue()
+        self.counter = itertools.count()
+
         if keep_timestamp is None:
             keep_timestamp = False
         if verbose is None:
@@ -56,9 +43,15 @@ class OrderedLog(PriorityQueue):
         self.keep_timestamp = keep_timestamp
         self.verbose = verbose
 
-        super(OrderedLog, self).__init__()
+    @property
+    def count(self):
+        return self.pq.qsize()
 
-    def push(self, pod, logentry):
+    @property
+    def empty(self):
+        return self.pq.empty()
+
+    def put(self, pod, logentry):
         try:
             (ts, logstring) = parse_logentry(logentry)
         except Exception as e:
@@ -67,18 +60,78 @@ class OrderedLog(PriorityQueue):
                            u"Error: {}".format(logentry, e))
             (ts, logstring) = 0, logentry
 
-        store_string = '{pod}: {entry}'.format(
-            pod=pod,
-            entry=logentry if self.keep_timestamp else logstring
-        )
-        super(OrderedLog, self).push(ts, store_string)
+        if isinstance(logentry, basestring):
+            item = '{pod}: {entry}'.format(
+                pod=pod,
+                entry=logentry if self.keep_timestamp else logstring
+            )
+        else:
+            item = logentry
 
-    def pop(self):
-        (ts, priority, string) = super(OrderedLog, self).pop()
-        return string
+        self.pq.put((ts, next(self.counter), item))
+
+    def get_raw(self, *args, **kwargs):
+        return self.pq.get(*args, **kwargs)
+
+    def get(self, *args, **kwargs):
+        """ Return just the item, but pass on *args and **kwargs
+        to allow timeouts, etc """
+        (priority, index, item) = self.pq.get(*args, **kwargs)
+        return item
 
 
-def get(app, pod, since_seconds, keep_timestamp):
+class LogStream(object):
+    def __init__(self, pod, source):
+        self.pod = pod
+        self.source = source
+
+    def __repr__(self):
+        return u'<LogStream({})>'.format(self.pod)
+
+
+class LogMultiplexer(object):
+    """ adapted from http://www.dabeaz.com/generators/genmulti.py
+    setting all threads to daemon so they'll get mercilessly killed on SIGINT / SIGTERM
+    """
+    def __init__(self, queue):
+        self.queue = queue
+        self.streams = []
+        self.threads = []
+        self.master = threading.Thread(target=self.run_all)
+        self.master.daemon = True
+
+    def add_stream(self, pod, stream):
+        self.streams.append(LogStream(pod, stream))
+
+    def run_one(self, stream):
+        for item in stream.source:
+            self.queue.put(stream.pod, item)
+        print stream, "is done"
+
+    def run_all(self):
+        for stream in self.streams:
+            t = threading.Thread(target=self.run_one, args=(stream, ))
+            t.daemon = True
+            t.start()
+            self.threads.append(t)
+
+        for t in self.threads:
+            t.join()
+        self.queue.put('', StopIteration)
+
+    def start(self):
+        self.master.start()
+
+    def get(self):
+        while True:
+            item = self.queue.get()
+            if item is StopIteration:
+                self.master.join()
+                return
+            yield item
+
+
+def get(app, pod, since_seconds, keep_timestamp, follow):
     pods = []
     if pod is None:
         for pod in Pod.objects(kube_api).filter(selector={'app': app}).iterator():
@@ -89,11 +142,11 @@ def get(app, pod, since_seconds, keep_timestamp):
         except ObjectDoesNotExist:
             click.echo(u"Can't find a pod named `{}`".format(pod))
 
-    ols = OrderedLog(keep_timestamp)
+    queue = TimestampOrderedQueue(keep_timestamp)
+    multiplexer = LogMultiplexer(queue)
     for pod in pods:
-        pod_logs = pod.logs(timestamps=True, since_seconds=since_seconds)
-        for line in pod_logs.split('\n'):
-            ols.push(pod.name, line)
-
-    while not ols.empty:
-        click.echo(ols.pop())
+        pod_logs = pod.logs(since_seconds=since_seconds, timestamps=True, follow=follow)
+        multiplexer.add_stream(pod.name, pod_logs)
+    multiplexer.start()
+    for entry in multiplexer.get():
+        click.echo(entry)
