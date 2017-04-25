@@ -14,6 +14,7 @@ import context
 import init
 import shell
 import status
+import logs
 
 # objects and helpers
 from objects import App, Environment
@@ -85,6 +86,16 @@ def init_app():
 def get_status(skip_ecr, skip_k8s):
     """ get the remote (k8s and ecr) status for the current kyber app context """
     status.echo(context, skip_ecr, skip_k8s)
+
+
+@cli.command('logs')
+@click.argument('pod', default=None, required=False)
+@click.option('--since-seconds', '-s', default=3600, required=False)
+@click.option('--keep-timestamps', default=True, required=False)
+@click.option('--follow', '-f', default=None, required=False, is_flag=True)
+@context.required()
+def get_logs(pod, since_seconds, keep_timestamps, follow):
+    logs.get(context.name, pod, since_seconds, keep_timestamps, follow)
 
 
 @cli.command('completion')
