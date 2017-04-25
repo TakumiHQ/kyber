@@ -37,7 +37,7 @@ class Pod(pykube.Pod):
         Produces the same result as calling kubectl logs pod/<pod-name>.
         Check parameters meaning at
         http://kubernetes.io/docs/api-reference/v1/operations/,
-        part 'read log of the specified Pod'. The result is plain text.
+        part 'read log of the specified Pod'. Returns a line iterator.
         """
         log_call = "log"
         query_string = urlencode(
@@ -52,11 +52,6 @@ class Pod(pykube.Pod):
             "operation": log_call,
             "stream": follow is True,
         }
-        if follow is None or follow is False:
-            r = self.api.get(**self.api_kwargs(**kwargs))
-            r.raise_for_status()
-            return r.text
-        else:
-            r = self.api.get(**self.api_kwargs(**kwargs))
-            r.raise_for_status()
-            return r.iter_lines(chunk_size=16)  # default is 512, this might be too small
+        r = self.api.get(**self.api_kwargs(**kwargs))
+        r.raise_for_status()
+        return r.iter_lines(chunk_size=16)  # default is 512, this might be too small
