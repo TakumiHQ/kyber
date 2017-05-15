@@ -7,6 +7,7 @@ from functools import wraps
 
 name = None
 docker = None
+git_hash = None
 tag = None
 target = None
 dirty = None
@@ -27,7 +28,8 @@ class Context(object):
     name = None             # current app name
     docker = None           # docker image (repo/app)
     port = None             # app port (not used?) XXX
-    tag = None              # git HEAD commit (deployment tag)
+    git_hash = None         # git HEAD commit
+    tag = None              # Deployment tag (git_XXX)
     target = None           # kubectl context
     git_dirty = False       # is the git repo dirty? (we only deploy built images)
     _git_status = None
@@ -87,13 +89,15 @@ class Context(object):
 
     def git_tag(self):
         from dulwich import porcelain as git
-        repo = git.Repo.discover(self.cwd)
-        self.tag = 'git_{}'.format(repo.head())
+        head = git.Repo.discover(self.cwd).head()
+        self.git_hash = head
+        self.tag = 'git_{}'.format(head)
 
     def export(self):
-        global name, docker, tag, target, dirty, dirty_reason, kube_ctx
+        global name, docker, git_hash, tag, target, dirty, dirty_reason, kube_ctx
         name = self.name
         docker = self.docker
+        git_hash = self.git_hash
         tag = self.tag
         target = self.target
         dirty = self.git_dirty
