@@ -13,7 +13,12 @@ def echo(context, skip_k8s=False, skip_ecr=False):
     cwd = os.path.abspath('.')
     repo = git.Repo.discover(cwd)
 
+    annotations = Environment(app.name).deployment.annotations
+    linked_deployment = annotations.get('kyber.linked.deployment')
+
     click.echo("Project: {}".format(context.name))
+    if linked_deployment is not None:
+        click.echo("Linked deployment: {}".format(linked_deployment))
     click.echo("Kubernetes target: {} ({})".format(context.kube_ctx['cluster'], context.kube_ctx['namespace']))
     click.echo("Docker registry: {}".format(context.docker))
     if not skip_k8s:

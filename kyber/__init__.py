@@ -51,8 +51,8 @@ def deploy_app(ctx, tag, force, yes):
         return
 
     click.echo("Deploying {}".format(ctx.tag))
-    deployment = deploy.execute(app, force)
-    deploy.wait_for(deployment)
+    deployments = deploy.execute(app, force)
+    deploy.wait_for(deployments)
 
 
 @cli.command('init')

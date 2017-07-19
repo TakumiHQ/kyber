@@ -20,9 +20,10 @@ class DeploymentSpec(object):
         self.spec['spec']['template']['metadata']['labels']['deploy_time'] = str(int(time.time()))
 
 
-def execute(app, force=False):
-    environment = Environment(app.name)
+def _run_deployment(environment_name, app, force=False):
+    environment = Environment(environment_name)
     deployment = environment.deployment
+
     if not force and environment.app and environment.app.tag == app.tag:
         click.echo("`{}` is already deployed, use force to trigger redeployment".format(app.tag))
         return deployment
@@ -32,15 +33,41 @@ def execute(app, force=False):
     update.update_metadata(app)
     deployment.set_obj(update.spec)
     deployment.update()
+
     return deployment
 
 
-def wait_for(deployment):
-    old_generation = deployment.generation
+def execute(app, force=False):
+
+    main_deployment = _run_deployment(app.name, app, force=force)
+
+    deployments = {
+        main_deployment.name: main_deployment
+    }
+
+    # Check if there is a linked deployment
+    linked_deployment = main_deployment.annotations.get('kyber.linked.deployment')
+    if linked_deployment is not None:
+        click.echo("Deploying linked deployment: {}".format(linked_deployment))
+
+        side_deployment = _run_deployment(linked_deployment, app, force=True)
+        deployments[side_deployment.name] = side_deployment
+
+    return deployments
+
+
+def wait_for(deployments):
+
     for event in Deployment.objects(kube_api).filter(namespace=kube_api.config.namespace).watch():
         depl = event.object
-        if depl.name == deployment.name:
+        if depl.name in deployments:
             click.echo(".", nl=False)
+
             if depl.ready is True:
-                click.echo("\nDeployment complete, generation {} -> {}".format(old_generation, depl.generation))
-                return
+                deployment = deployments.pop(depl.name)
+                old_generation = deployment.generation
+
+                click.echo("\nDeployment ({}) complete, generation {} -> {}".format(
+                    depl.name, old_generation, depl.generation))
+                if len(deployments) is 0:
+                    return
