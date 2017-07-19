@@ -45,12 +45,12 @@ def deploy_app(ctx, tag, force, yes):
         status.echo(ctx)
         click.confirm("Continue?", abort=True, default=True)
 
-    app = App(ctx.name, ctx.docker, tag)
+    app = App(ctx.name, ctx.docker, ctx.tag)
     if not ecr.image_exists(app.image):
         click.echo("Can't find a docker for {}\naborting..".format(app.image))
         return
 
-    click.echo("Deploying {}".format(tag))
+    click.echo("Deploying {}".format(ctx.tag))
     deployment = deploy.execute(app, force)
     deploy.wait_for(deployment)
 
