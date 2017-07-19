@@ -28,11 +28,14 @@ def echo(context, skip_k8s=False, skip_ecr=False):
 
     try:
         commit = repo.get_object(context.git_hash)
+        # Indent the whole message to make it stand out more in the status output
+        indent = 4
+        indented_message = ''.join(' ' * indent + line for line in commit.message.splitlines(True))
 
         click.echo("")
         click.echo("Author: {}".format(commit.author))
         click.echo("Date:   {}".format(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime(commit.commit_time))))
         click.echo("")
-        click.echo("    {}".format(commit.message))
+        click.echo("{}".format(indented_message))
     except KeyError:
         click.echo("Commit not found in local repository")
