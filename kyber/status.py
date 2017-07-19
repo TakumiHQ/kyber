@@ -27,11 +27,7 @@ def echo(context, skip_k8s=False, skip_ecr=False):
     click.echo("Current tag: {} [deployable: {}]".format(context.tag, deployable))
 
     try:
-        git_hash = context.tag
-        if git_hash.startswith('git_'):
-            git_hash = git_hash[4:]
-
-        commit = repo.get_object(git_hash)
+        commit = repo.get_object(context.git_hash)
 
         # Indent the whole message to make it stand out more in the status output
         indent = 4
