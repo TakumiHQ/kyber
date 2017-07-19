@@ -36,19 +36,16 @@ def config_cli():
 @click.option('--force', '-f', default=False, is_flag=True)
 @click.option('--yes', '-y', default=False, is_flag=True)
 @context.required()
-def deploy_app(tag, force, yes):
+def deploy_app(ctx, tag, force, yes):
     """ trigger a deployment """
-    if tag is None:
-        tag = context.tag
-    if not tag.startswith('git_'):
-        tag = 'git_{}'.format(tag)
-    context.tag = tag
+
+    ctx.set_git_hash(git_hash=tag)
 
     if not yes:
-        status.echo(context)
+        status.echo(ctx)
         click.confirm("Continue?", abort=True, default=True)
 
-    app = App(context.name, context.docker, tag)
+    app = App(ctx.name, ctx.docker, tag)
     if not ecr.image_exists(app.image):
         click.echo("Can't find a docker for {}\naborting..".format(app.image))
         return

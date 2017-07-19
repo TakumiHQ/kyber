@@ -5,15 +5,6 @@ import sys
 import yaml
 from functools import wraps
 
-name = None
-docker = None
-git_hash = None
-tag = None
-target = None
-dirty = None
-dirty_reason = None
-kube_ctx = None
-
 
 class ContextError(Exception):
     pass
@@ -29,7 +20,6 @@ class Context(object):
     docker = None           # docker image (repo/app)
     port = None             # app port (not used?) XXX
     git_hash = None         # git HEAD commit
-    tag = None              # Deployment tag (git_XXX)
     target = None           # kubectl context
     git_dirty = False       # is the git repo dirty? (we only deploy built images)
     _git_status = None
@@ -37,7 +27,7 @@ class Context(object):
     def __init__(self, checks=None):
         tasks = dict(
             config=self.load_config,
-            git_tag=self.git_tag,
+            git_tag=self.set_git_hash,
             git_status=self.git_status,
         )
         if checks is None:
@@ -87,22 +77,18 @@ class Context(object):
             self.is_dirty = True
         self._git_status = status
 
-    def git_tag(self):
-        from dulwich import porcelain as git
-        head = git.Repo.discover(self.cwd).head()
-        self.git_hash = head
-        self.tag = 'git_{}'.format(head)
+    def set_git_hash(self, git_hash=None):
+        if git_hash is None:
+            from dulwich import porcelain as git
+            git_hash = git.Repo.discover(self.cwd).head()
+        else:
+            git_hash = git_hash.replace('git_', '')
 
-    def export(self):
-        global name, docker, git_hash, tag, target, dirty, dirty_reason, kube_ctx
-        name = self.name
-        docker = self.docker
-        git_hash = self.git_hash
-        tag = self.tag
-        target = self.target
-        dirty = self.git_dirty
-        dirty_reason = self._git_status
-        kube_ctx = self.kube_ctx
+        self.git_hash = git_hash
+
+    @property
+    def tag(self):
+        return 'git_{}'.format(self.git_hash)
 
 
 def required(**ctx_kwargs):
@@ -111,7 +97,7 @@ def required(**ctx_kwargs):
         def inner(*args, **kwargs):
             try:
                 ctx = Context(**ctx_kwargs)
-                ctx.export()
+                kwargs['ctx'] = ctx
             except ContextError as e:
                 click.echo("Unable to load kyber context: {}".format(e.message))
                 sys.exit(1)
@@ -119,6 +105,3 @@ def required(**ctx_kwargs):
             return fn(*args, **kwargs)
         return inner
     return wrapper
-
-
-__all__ = [required, name, docker, tag, target, dirty, dirty_reason, kube_ctx, Context]
