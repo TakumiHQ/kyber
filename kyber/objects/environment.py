@@ -53,7 +53,11 @@ class Environment(object):
 
         name = metadata['labels']['app']
         docker, tag = spec['containers'][0]['image'].split(":", 2)
-        port = spec['containers'][0]['ports'][0].get('containerPort')
+        try:
+            port = spec['containers'][0]['ports'][0].get('containerPort')
+        except KeyError:
+            port = None
+
         app = App(name, docker, tag, port)
         app.secret = self.secret
 
