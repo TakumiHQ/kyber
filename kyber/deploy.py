@@ -44,14 +44,21 @@ def execute(app, force=False):
 
 def wait_for(deployments):
     for event in Deployment.objects(kube_api).filter(namespace=kube_api.config.namespace).watch():
-        depl = event.object
-        if depl.name in deployments:
-            click.echo(".", nl=False)
-            if depl.ready is True:
-                deployment = deployments.pop(depl.name)
-                old_generation = deployment.generation
+        if event.type != 'MODIFIED':
+            continue
 
+        event_deployment = event.object
+        if event_deployment.name in deployments:
+            click.echo(".", nl=False)
+
+            old_deployment = deployments[event_deployment.name]
+            if event_deployment.generation == old_deployment.generation:
+                continue
+
+            if event_deployment.ready is True:
                 click.echo("\nDeployment ({}) complete, generation {} -> {}".format(
-                    depl.name, old_generation, depl.generation))
+                    event_deployment.name, old_deployment.generation, event_deployment.generation))
+
+                deployments.pop(event_deployment.name)
                 if len(deployments) is 0:
                     return
