@@ -36,24 +36,21 @@ def config_cli():
 @click.option('--force', '-f', default=False, is_flag=True)
 @click.option('--yes', '-y', default=False, is_flag=True)
 @context.required()
-def deploy_app(tag, force, yes):
+def deploy_app(ctx, tag, force, yes):
     """ trigger a deployment """
-    if tag is None:
-        tag = context.tag
-    if not tag.startswith('git_'):
-        tag = 'git_{}'.format(tag)
-    context.tag = tag
+
+    ctx.set_git_hash(git_hash=tag)
 
     if not yes:
-        status.echo(context)
+        status.echo(ctx)
         click.confirm("Continue?", abort=True, default=True)
 
-    app = App(context.name, context.docker, tag)
+    app = App(ctx.name, ctx.docker, ctx.tag)
     if not ecr.image_exists(app.image):
         click.echo("Can't find a docker for {}\naborting..".format(app.image))
         return
 
-    click.echo("Deploying {}".format(tag))
+    click.echo("Deploying {}".format(ctx.tag))
     deployment = deploy.execute(app, force)
     deploy.wait_for(deployment)
 
@@ -83,9 +80,9 @@ def init_app():
 @click.option('--skip-ecr', is_flag=True, default=False)
 @click.option('--skip-k8s', is_flag=True, default=False)
 @context.required()
-def get_status(skip_ecr, skip_k8s):
+def get_status(ctx, skip_ecr, skip_k8s):
     """ get the remote (k8s and ecr) status for the current kyber app context """
-    status.echo(context, skip_ecr, skip_k8s)
+    status.echo(ctx, skip_ecr, skip_k8s)
 
 
 @cli.command('logs')
@@ -94,8 +91,8 @@ def get_status(skip_ecr, skip_k8s):
 @click.option('--keep-timestamps', '-k', default=False, required=False, is_flag=True)
 @click.option('--follow', '-f', default=None, required=False, is_flag=True)
 @context.required()
-def get_logs(pod, since_seconds, keep_timestamps, follow):
-    logs.get(context.name, pod, since_seconds, keep_timestamps, follow)
+def get_logs(ctx, pod, since_seconds, keep_timestamps, follow):
+    logs.get(ctx.name, pod, since_seconds, keep_timestamps, follow)
 
 
 @cli.command('completion')
@@ -114,9 +111,9 @@ def get_completion(ctx):
 @cli.command('shell')
 @click.argument('shell_path', default='/bin/bash', required=False)
 @context.required()
-def run_shell(shell_path):
+def run_shell(ctx, shell_path):
     """ execute a shell in the first possible pod (defaults to /bin/bash) """
-    shell.run(context.name, shell_path)
+    shell.run(ctx.name, shell_path)
 
 
 @cli.command('dash')
@@ -134,9 +131,9 @@ def show_version():
 
 @config_cli.command('list')
 @context.required(checks=['config'])
-def config_list():
+def config_list(ctx):
     """ list configuration in var=value (envfile) format """
-    env = Environment(context.name)
+    env = Environment(ctx.name)
     cfg = env.secret
     for key in sorted(cfg.keys()):
         click.echo("{}={}".format(key, cfg[key]))
@@ -145,9 +142,9 @@ def config_list():
 @config_cli.command('get')
 @click.argument('key')
 @context.required()
-def config_get(key):
+def config_get(ctx, key):
     """ get a single config variable """
-    env = Environment(context.name)
+    env = Environment(ctx.name)
     cfg = env.secret
     if key not in cfg:
         click.echo("No var found for `{}.{}`".format(context.name, key))
@@ -159,9 +156,9 @@ def config_get(key):
 @click.argument('key')
 @click.argument('value')
 @context.required()
-def config_set(key, value):
+def config_set(ctx, key, value):
     """ set a single config variable"""
-    env = Environment(context.name)
+    env = Environment(ctx.name)
     cfg = env.secret
     cfg[key] = value
     cfg.update()
@@ -170,11 +167,11 @@ def config_set(key, value):
 @config_cli.command('unset')
 @click.argument('key')
 @context.required()
-def config_unset(key):
-    env = Environment(context.name)
+def config_unset(ctx, key):
+    env = Environment(ctx.name)
     cfg = env.secret
     if click.confirm(u"Do you wish to delete config variable {}.{} with value of `{}`".format(
-            context.name, key, cfg[key])):
+            ctx.name, key, cfg[key])):
         del cfg[key]
         cfg.update()
 
@@ -182,8 +179,8 @@ def config_unset(key):
 @config_cli.command('envdir')
 @click.argument('target_dir')
 @context.required()
-def config_envdir(target_dir):
-    env = Environment(context.name)
+def config_envdir(ctx, target_dir):
+    env = Environment(ctx.name)
     cfg = env.secret
     target_dir = os.path.abspath(target_dir)
     if not click.confirm("found {} vars, will write to `{}/*`".format(len(cfg), target_dir)):
@@ -203,9 +200,9 @@ def config_envdir(target_dir):
 @config_cli.command('load')
 @click.argument('source')
 @context.required()
-def config_load(source):
+def config_load(ctx, source):
     source = os.path.abspath(source)
-    env = Environment(context.name)
+    env = Environment(ctx.name)
 
     if not os.path.exists(source):
         click.echo("Can't load vars from `{}` no such file or directory".format(source))
