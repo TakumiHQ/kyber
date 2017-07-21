@@ -20,13 +20,7 @@ class DeploymentSpec(object):
         self.spec['spec']['template']['metadata']['labels']['deploy_time'] = str(int(time.time()))
 
 
-def execute(app, force=False):
-    environment = Environment(app.name)
-    deployment = environment.deployment
-    if not force and environment.app and environment.app.tag == app.tag:
-        click.echo("`{}` is already deployed, use force to trigger redeployment".format(app.tag))
-        return deployment
-
+def _run_deployment(deployment, app):
     update = DeploymentSpec(deployment)
     update.update_image(app)
     update.update_metadata(app)
@@ -35,12 +29,36 @@ def execute(app, force=False):
     return deployment
 
 
-def wait_for(deployment):
-    old_generation = deployment.generation
+def execute(app, force=False):
+    app_environment = Environment(app.name)
+    if not force and app_environment.app and app_environment.app.tag == app.tag:
+        click.echo("`{}` is already deployed, use force to trigger redeployment".format(app.tag))
+        return
+
+    deployments = {}
+    for deployment in [app_environment.deployment] + app_environment.linked_deployments:
+        deployments[deployment.name] = _run_deployment(deployment, app)
+
+    return deployments
+
+
+def wait_for(deployments):
     for event in Deployment.objects(kube_api).filter(namespace=kube_api.config.namespace).watch():
-        depl = event.object
-        if depl.name == deployment.name:
+        if event.type != 'MODIFIED':
+            continue
+
+        event_deployment = event.object
+        if event_deployment.name in deployments:
             click.echo(".", nl=False)
-            if depl.ready is True:
-                click.echo("\nDeployment complete, generation {} -> {}".format(old_generation, depl.generation))
-                return
+
+            old_deployment = deployments[event_deployment.name]
+            if event_deployment.generation == old_deployment.generation:
+                continue
+
+            if event_deployment.ready is True:
+                click.echo("\nDeployment ({}) complete, generation {} -> {}".format(
+                    event_deployment.name, old_deployment.generation, event_deployment.generation))
+
+                deployments.pop(event_deployment.name)
+                if len(deployments) is 0:
+                    return
