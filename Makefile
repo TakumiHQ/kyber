@@ -31,8 +31,6 @@ release:
 	fi
 	git checkout $(GIT_BRANCH)
 
-fexx:
-
 release_test:
 	venv/bin/python setup.py sdist bdist_wheel upload -r pypitest
 
