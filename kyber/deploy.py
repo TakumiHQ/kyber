@@ -20,49 +20,33 @@ class DeploymentSpec(object):
         self.spec['spec']['template']['metadata']['labels']['deploy_time'] = str(int(time.time()))
 
 
-def _run_deployment(environment_name, app, force=False):
-    environment = Environment(environment_name)
-    deployment = environment.deployment
-
-    if not force and environment.app and environment.app.tag == app.tag:
-        click.echo("`{}` is already deployed, use force to trigger redeployment".format(app.tag))
-        return deployment
-
+def _run_deployment(deployment, app):
     update = DeploymentSpec(deployment)
     update.update_image(app)
     update.update_metadata(app)
     deployment.set_obj(update.spec)
     deployment.update()
-
     return deployment
 
 
 def execute(app, force=False):
+    app_environment = Environment(app.name)
+    if not force and app_environment.app and app_environment.app.tag == app.tag:
+        click.echo("`{}` is already deployed, use force to trigger redeployment".format(app.tag))
+        return
 
-    main_deployment = _run_deployment(app.name, app, force=force)
-
-    deployments = {
-        main_deployment.name: main_deployment
-    }
-
-    # Check if there is a linked deployment
-    linked_deployment = main_deployment.annotations.get('kyber.linked.deployment')
-    if linked_deployment is not None:
-        click.echo("Deploying linked deployment: {}".format(linked_deployment))
-
-        side_deployment = _run_deployment(linked_deployment, app, force=True)
-        deployments[side_deployment.name] = side_deployment
+    deployments = {}
+    for deployment in [app_environment.deployment] + app_environment.linked_deployments:
+        deployments[deployment.name] = _run_deployment(deployment, app)
 
     return deployments
 
 
 def wait_for(deployments):
-
     for event in Deployment.objects(kube_api).filter(namespace=kube_api.config.namespace).watch():
         depl = event.object
         if depl.name in deployments:
             click.echo(".", nl=False)
-
             if depl.ready is True:
                 deployment = deployments.pop(depl.name)
                 old_generation = deployment.generation

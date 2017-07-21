@@ -11,6 +11,10 @@ from kyber.objects.secret import Secret
 
 from kyber.lib.kube import kube_api
 
+
+LINKED_DEPLOYMENT_KEY_PREFIX = 'kyber.linked.deployment'
+
+
 object_cls = dict(
     deployment=Deployment,
     service=Service,
@@ -27,6 +31,7 @@ def kube_from_template(template, app):
 class Environment(object):
     """ A wrapper object around the necessary kubernetes objects to run a kyber app """
     deployment = None
+    linked_deployments = None
     service = None
     secret = None
 
@@ -36,6 +41,17 @@ class Environment(object):
         self.service = Service.objects(kube_api).get_or_none(name=name)
         self.secret = Secret.objects(kube_api).get_or_none(name=name)
         self.app = self.app_from_objects()
+        self.linked_deployments = self._get_linked_deployments()
+
+    def _get_linked_deployments(self):
+        linked = []
+        for key in self.deployment.annotations.keys():
+            if key.startswith(LINKED_DEPLOYMENT_KEY_PREFIX):
+                deployment = Deployment.objects(kube_api).get(
+                    name=self.deployment.annotations[key]
+                )
+                linked.append(deployment)
+        return linked
 
     def status(self):
         for name, obj in self.kube_objects.iteritems():
