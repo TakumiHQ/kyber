@@ -27,8 +27,13 @@ class Pod(pykube.Pod):
         if limit_bytes is not None:
             params["limitBytes"] = int(limit_bytes)
         if follow is not None:
-            params["follow"] = bool(follow)
+            params["follow"] = str(bool(follow)).lower()
         return params
+
+    @property
+    def phase(self):
+        if self.obj:
+            return self.obj['status']['phase']
 
     def logs(self, container=None, pretty=None, previous=False,
              since_seconds=None, since_time=None, timestamps=False,
