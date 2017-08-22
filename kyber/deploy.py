@@ -43,6 +43,9 @@ def execute(app, force=False):
 
 
 def wait_for(deployments):
+    if deployments is None or len(deployments) is 0:
+        return
+
     for event in Deployment.objects(kube_api).filter(namespace=kube_api.config.namespace).watch():
         if event.type != 'MODIFIED':
             continue
