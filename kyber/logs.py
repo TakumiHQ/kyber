@@ -133,7 +133,7 @@ class LogMultiplexer(object):
 def get(app, pod, since_seconds, keep_timestamp, follow):
     pods = []
     if pod is None:
-        for pod in Pod.objects(kube_api).filter(selector={'app': app}).iterator():
+        for pod in Pod.objects(kube_api).filter(selector={'app': app}, field_selector={'status.phase': 'Running'}).iterator():
             pods.append(pod)
     else:
         try:
