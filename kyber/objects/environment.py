@@ -45,12 +45,13 @@ class Environment(object):
 
     def _get_linked_deployments(self):
         linked = []
-        for key in self.deployment.annotations.keys():
-            if key.startswith(LINKED_DEPLOYMENT_KEY_PREFIX):
-                deployment = Deployment.objects(kube_api).get(
-                    name=self.deployment.annotations[key]
-                )
-                linked.append(deployment)
+        if self.deployment is not None:
+            for key in self.deployment.annotations.keys():
+                if key.startswith(LINKED_DEPLOYMENT_KEY_PREFIX):
+                    deployment = Deployment.objects(kube_api).get(
+                        name=self.deployment.annotations[key]
+                    )
+                    linked.append(deployment)
         return linked
 
     def status(self):
