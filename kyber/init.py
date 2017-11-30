@@ -40,9 +40,10 @@ class Config(object):
             context_cfg['name'],
             context_cfg['docker'],
             context_cfg['tag'],
-            context_cfg.get('port'),
-            context_cfg.get('dns_name'),
-            context_cfg.get('ssl_cert'),
+            port=context_cfg.get('port'),
+            dns_name=context_cfg.get('dns_name'),
+            ssl_cert=context_cfg.get('ssl_cert'),
+            bluegreen=context_cfg.get('bluegreen'),
         )
         return cls(app)
 

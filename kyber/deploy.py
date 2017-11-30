@@ -29,7 +29,7 @@ def _run_deployment(deployment, app):
     return deployment
 
 
-def execute(app, force=False):
+def execute(app, force=False, wait_for_deployment=False, wait_for_pods=False):
     app_environment = Environment(app.name)
     if not force and app_environment.app and app_environment.app.tag == app.tag:
         click.echo("`{}` is already deployed, use force to trigger redeployment".format(app.tag))
@@ -38,23 +38,22 @@ def execute(app, force=False):
     deployments = {}
     for deployment in [app_environment.deployment] + app_environment.linked_deployments:
         deployments[deployment.name] = _run_deployment(deployment, app)
+        if wait_for_deployments:
+            wait_for(deployment, wait_for_pods)
 
     return deployments
 
 
-def wait_for(deployments):
-    if deployments is None or len(deployments) is 0:
-        return
-
+def wait_for(deployment, wait_for_pods=False):
     for event in Deployment.objects(kube_api).filter(namespace=kube_api.config.namespace).watch():
         if event.type != 'MODIFIED':
             continue
 
         event_deployment = event.object
-        if event_deployment.name in deployments:
+        if event_deployment.name == deployment.name:
             click.echo(".", nl=False)
 
-            old_deployment = deployments[event_deployment.name]
+            old_deployment = deployment
             if event_deployment.generation == old_deployment.generation:
                 continue
 
@@ -62,6 +61,14 @@ def wait_for(deployments):
                 click.echo("\nDeployment ({}) complete, generation {} -> {}".format(
                     event_deployment.name, old_deployment.generation, event_deployment.generation))
 
-                deployments.pop(event_deployment.name)
-                if len(deployments) is 0:
-                    return
+            if wait_for_pods:
+                click.echo("")
+                while True
+                    desired, updated, available = (
+                        deployment.replicas,
+                        deployment.updated_replicas,
+                        deployment.available_replicas
+                    )
+                    click.echo("..waiting for pods ({} / {} / {})".format(desired, updated, available)
+                    if desired == updated == available:
+                        break

@@ -16,5 +16,17 @@ class Deployment(pykube.Deployment):
         except KeyError:
             return 0
 
+    @property
+    def available_replicas(self):
+        if not self.ready:
+            return 0
+        return self.obj['status']['availableReplicas']
+
+    @property
+    def updated_replicas(self):
+        if not self.ready:
+            return 0
+        return self.obj['status']['updatedReplicas']
+
     def __repr__(self):
         return "<Deployment {}>".format(self.name)

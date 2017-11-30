@@ -22,6 +22,7 @@ class Context(object):
     git_hash = None         # git HEAD commit
     target = None           # kubectl context
     git_dirty = False       # is the git repo dirty? (we only deploy built images)
+    bluegreen = False       # use blue/green deployments
     _git_status = None
 
     def __init__(self, checks=None):
@@ -60,6 +61,8 @@ class Context(object):
         self.name = cfg[kube_ctx]['name']
         self.docker = cfg[kube_ctx]['docker']
         self.port = cfg[kube_ctx]['port']
+
+        self.bluegreen = cfg[kube_ctx].get('bluegreen', False)
 
     def git_status(self):
         from dulwich import porcelain as git
