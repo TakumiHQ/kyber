@@ -17,7 +17,8 @@ def run(name, shell):
         d = {
             'KYBER_USER': pwd.getpwuid(os.getuid()).pw_name,
             'KYBER_POD': pod.name,
-            'KYBER_APP': name
+            'KYBER_APP': name,
+            'KYBER_KUBECTL_CONTEXT': kube_api.config.current_context,
         }
         return " ".join(["{}={}".format(key, val) for key, val in d.iteritems()])
 
