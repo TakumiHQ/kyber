@@ -147,7 +147,7 @@ def config_get(ctx, key):
     env = Environment(ctx.name)
     cfg = env.secret
     if key not in cfg:
-        click.echo("No var found for `{}.{}`".format(context.name, key))
+        click.echo("No var found for `{}.{}`".format(ctx.name, key))
         return
     click.echo(cfg[key])
 
