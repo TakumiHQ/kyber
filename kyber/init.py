@@ -115,7 +115,7 @@ def initialize(name, tag):
             click.echo("No app found in kubernetes environment")
             app = from_scratch(name, tag)
             config = Config(app)
-        if click.confirm("Save configuration to `.kyber/config`?"):
+        if click.confirm("Save configuration to `.kyber/config`?", default=True):
             config.save(context)
 
     environment.app = config.app
