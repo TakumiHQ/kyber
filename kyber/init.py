@@ -5,6 +5,7 @@ import yaml
 from dulwich import porcelain as git
 from dulwich.errors import NotGitRepository
 
+from kyber.utils import nullable_prompt
 from kyber.objects import App, Environment
 from kyber.lib.kube import kube_api
 
@@ -81,11 +82,11 @@ def get_default_name(cwd):
 
 def from_scratch(name, tag):
     docker = click.prompt(
-        "Enter ECR (e.g. ...dkr.ecr.us-east-1.amazonaws.com/{})".format(name), default=os.environ.get('ECR'))
-    port = click.prompt("Enter app port", default=5000)
-    tag = click.prompt("Enter tag", default='git_{}'.format(tag))
-    dns_name = click.prompt("Enter DNS name (enter for none)", default=None)
-    ssl_cert = click.prompt("Enter SSL certificate ARN (enter for none)", default=None)
+        'Enter ECR (e.g. ...dkr.ecr.us-east-1.amazonaws.com/{})'.format(name), default=os.environ.get('ECR'))
+    port = click.prompt('Enter app port', default=5000)
+    tag = click.prompt('Enter tag', default='git_{}'.format(tag))
+    dns_name = nullable_prompt('Enter DNS name', default='')
+    ssl_cert = nullable_prompt('Enter SSL certificate ARN', default='')
     app = App(name, docker, tag, port, dns_name, ssl_cert)
     return app
 
@@ -114,7 +115,7 @@ def initialize(name, tag):
             click.echo("No app found in kubernetes environment")
             app = from_scratch(name, tag)
             config = Config(app)
-        if click.confirm("Save configuration to `.kyber/config`?"):
+        if click.confirm("Save configuration to `.kyber/config`?", default=True):
             config.save(context)
 
     environment.app = config.app

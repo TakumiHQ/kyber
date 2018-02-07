@@ -1,3 +1,4 @@
+import click
 import sh
 import time
 
@@ -36,3 +37,10 @@ def get_executable_path(executable):
     if path is None:
         raise Exception("Can't find '{}' executable, is it in your $PATH?".format(executable))
     return str(path)
+
+
+def nullable_prompt(*args, **kwargs):
+    ret = click.prompt(*args, **kwargs)
+    if ret == '':
+        ret = None
+    return ret

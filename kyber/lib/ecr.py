@@ -20,7 +20,7 @@ class Image(object):
 
     @staticmethod
     def _repo_name(image):
-        name = image.split("/")[1]
+        name = image.split("/", 1)[1]
         if ":" in name:
             name = name.split(":")[0]
         return name
