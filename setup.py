@@ -31,8 +31,14 @@ if __name__ == "__main__":
 
     for req in install_requires:
         if req.startswith("-e"):
-            dependency_links.append(req)
+            dependency_links.append(req.replace("-e ", ""))
             install_requires.remove(req)
+    # pykube requirements
+    install_requires += [ "requests>=2.12",
+        "PyYAML",
+        "six>=1.10.0",
+        "tzlocal",
+    ]
 
     setup(
         name='kyber-k8s',
