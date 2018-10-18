@@ -6,8 +6,6 @@ from kyber.lib.kube import kube_api
 from kyber.utils import get_executable_path
 
 
-
-
 def run(name, shell):
     for pod in Pod.objects(kube_api).filter(selector={'app': name}).iterator():
         if pod.ready:  # use the first ready pod, otherwise we use the last pod

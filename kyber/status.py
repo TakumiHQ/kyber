@@ -18,7 +18,10 @@ def echo(context, skip_k8s=False, skip_ecr=False):
     click.echo("Project: {}".format(context.name))
     for linked_deployment in environment.linked_deployments:
         click.echo("Linked deployment: {}".format(linked_deployment.name))
-    click.echo("Kubernetes target: {} ({})".format(context.kube_ctx['cluster'], context.kube_ctx.get('namespace', 'default')))
+    click.echo("Kubernetes target: {} ({})".format(
+        context.kube_ctx['cluster'],
+        context.kube_ctx.get('namespace', 'default')
+    ))
     click.echo("Docker registry: {}".format(context.docker))
     if not skip_k8s:
         deployed_app = Environment(context.name).app
