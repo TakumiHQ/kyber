@@ -88,7 +88,7 @@ class Context(object):
 
     @property
     def tag(self):
-        return 'git_{}'.format(self.git_hash)
+        return 'git_{}'.format(self.git_hash.decode())
 
 
 def required(**ctx_kwargs):

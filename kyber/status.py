@@ -36,10 +36,10 @@ def echo(context, skip_k8s=False, skip_ecr=False):
 
         # Indent the whole message to make it stand out more in the status output
         indent = 4
-        indented_message = ''.join(' ' * indent + line for line in commit.message.splitlines(True))
+        indented_message = ''.join(' ' * indent + line for line in commit.message.decode().splitlines(True))
 
         click.echo("")
-        click.echo("Author: {}".format(commit.author))
+        click.echo("Author: {}".format(commit.author.decode()))
         click.echo("Date:   {}".format(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime(commit.commit_time))))
         click.echo("")
         click.echo("{}".format(indented_message))
