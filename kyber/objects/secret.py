@@ -26,7 +26,7 @@ class Secret(pykube.Secret):
         return len(self.obj['data'])
 
     def __cmp__(self, dict_):
-        return cmp(self.obj['data'], dict_)
+        return (self.obj['data'] > dict_) - (self.obj['data'] < dict_)
 
     def __contains__(self, item):
         return item in self.obj['data']

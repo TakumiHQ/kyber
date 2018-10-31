@@ -24,7 +24,7 @@ object_cls = dict(
 
 def kube_from_template(template, app):
     raw_tpl = pkgutil.get_data('kyber', 'templates/{}.yaml'.format(template))
-    cooked_tpl = Template(raw_tpl).render(dict(app=app))
+    cooked_tpl = Template(raw_tpl.decode()).render(dict(app=app))
     return yaml.load(cooked_tpl)
 
 
