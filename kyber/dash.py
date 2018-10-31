@@ -1,5 +1,4 @@
 import json
-import os
 import subprocess
 from urlparse import urljoin
 
@@ -49,7 +48,7 @@ def launch(cfg=None, executor=None):  # noqa: C901
         cfg = kube_api.config
 
     if executor is None:
-        executor = os.execve
+        executor = subprocess
 
     token = _get_token(cfg)
     if token:
@@ -57,7 +56,7 @@ def launch(cfg=None, executor=None):  # noqa: C901
 
     click.echo("Starting kubectl proxy")
     try:
-        proxy = subprocess.Popen(["kubectl", "proxy"])
+        proxy = executor.Popen(["kubectl", "proxy"])
     except Exception as e:
         click.echo("Unable to start kubectl proxy ({})".format(e))
         proxy = None
@@ -77,7 +76,7 @@ def launch(cfg=None, executor=None):  # noqa: C901
         url = namespace_dashboard(cfg)
 
     try:
-        subprocess.call(["open", url])
+        executor.call(["open", url])
     except Exception as e:
         click.echo("Unable to launch dashboard automatically ({})".format(e))
         click.echo("URL: {}".format(url))
