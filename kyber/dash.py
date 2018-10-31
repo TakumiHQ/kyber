@@ -1,7 +1,7 @@
 import json
 import os
 import subprocess
-from urlparse import urljoin
+from urllib.parse import urljoin
 
 import click
 

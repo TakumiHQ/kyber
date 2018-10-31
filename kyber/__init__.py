@@ -7,18 +7,18 @@ from dulwich.errors import NotGitRepository
 from jinja2 import Template
 
 # logical modules
-import dash
-import deploy
-import config
-import context
-import init
-import shell
-import status
-import logs
+from . import dash
+from . import deploy
+from . import config
+from . import context
+from . import init
+from . import shell
+from . import status
+from . import logs
 
 # objects and helpers
-from objects import App, Environment
-from lib import ecr
+from .objects import App, Environment
+from .lib import ecr
 
 
 @click.group()
@@ -170,7 +170,7 @@ def config_set(ctx, key, value):
 def config_unset(ctx, key):
     env = Environment(ctx.name)
     cfg = env.secret
-    if click.confirm(u"Do you wish to delete config variable {}.{} with value of `{}`".format(
+    if click.confirm("Do you wish to delete config variable {}.{} with value of `{}`".format(
             ctx.name, key, cfg[key])):
         del cfg[key]
         cfg.update()

@@ -2,8 +2,8 @@ import click
 import os
 import time
 
-from objects import App, Environment
-from lib import ecr
+from .objects import App, Environment
+from .lib import ecr
 from dulwich import porcelain as git
 
 

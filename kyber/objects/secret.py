@@ -38,22 +38,22 @@ class Secret(pykube.Secret):
         return "<Secret {}: {}>".format(self.name, repr(self.obj['data']))
 
     def __unicode__(self):
-        return unicode(repr(self))
+        return str(repr(self))
 
     def has_key(self, k):
-        return self.obj['data'].has_key(k)  # noqa
+        return k in self.obj['data']  # noqa
 
     def keys(self):
-        return self.obj['data'].keys()
+        return list(self.obj['data'].keys())
 
     def values(self):
-        return self.obj['data'].values()
+        return list(self.obj['data'].values())
 
     def items(self):
-        return self.obj['data'].items()
+        return list(self.obj['data'].items())
 
     def iteritems(self):
-        return self.obj['data'].iteritems()
+        return iter(self.obj['data'].items())
 
     def pop(self, *args, **kwargs):
         return self.obj['data'].pop(*args, **kwargs)
