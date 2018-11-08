@@ -3,6 +3,20 @@ import json
 import pykube
 
 
+def b64_decode(s):
+    if isinstance(s, str):
+        s = s.encode('utf-8')
+    decoded = base64.b64decode(s)
+    return decoded.decode('utf-8')
+
+
+def b64_encode(s):
+    if isinstance(s, str):
+        s = s.encode('utf-8')
+    encoded = base64.b64encode(s)
+    return encoded.decode('utf-8')
+
+
 class Secret(pykube.Secret):
     """ kubernetes secrets wrapper, implements almost complete dict interface
     and automatically base64 encodes/decodes values to maintain them as base64
@@ -14,10 +28,10 @@ class Secret(pykube.Secret):
             self.obj['data'] = dict()
 
     def __setitem__(self, key, item):
-        self.obj['data'][key] = base64.b64encode(item)
+        self.obj['data'][key] = b64_encode(item)
 
     def __getitem__(self, key):
-        return base64.b64decode(self.obj['data'][key])
+        return b64_decode(self.obj['data'][key])
 
     def __delitem__(self, key):
         del self.obj['data'][key]
