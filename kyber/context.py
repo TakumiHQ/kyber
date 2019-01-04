@@ -84,6 +84,9 @@ class Context(object):
         else:
             git_hash = git_hash.replace('git_', '')
 
+        if isinstance(git_hash, str):
+            git_hash = git_hash.encode('ascii')
+
         self.git_hash = git_hash
 
     @property
