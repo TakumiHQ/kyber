@@ -102,7 +102,7 @@ def required(**ctx_kwargs):
                 ctx = Context(**ctx_kwargs)
                 kwargs['ctx'] = ctx
             except ContextError as e:
-                click.echo("Unable to load kyber context: {}".format(e.message))
+                click.echo("Unable to load kyber context: {}".format(e))
                 sys.exit(1)
 
             return fn(*args, **kwargs)
