@@ -101,7 +101,7 @@ def get_completion(ctx):
     """ dump a bash/zsh compatible kb completion script """
     available_commands = cli.list_commands(ctx)
     available_config_commands = config_cli.list_commands(ctx)
-    raw_tpl = pkgutil.get_data('kyber', 'templates/kyber-completion.sh')
+    raw_tpl = pkgutil.get_data('kyber', 'templates/kyber-completion.sh').decode('utf-8')
     click.echo(Template(raw_tpl).render(
         kyber_commands=available_commands,
         kyber_config_commands=available_config_commands
