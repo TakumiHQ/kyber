@@ -41,7 +41,7 @@ class Context(object):
         cfg_name = os.path.join(self.cwd, '.kyber/config')
         try:
             with open(cfg_name) as app_config:
-                cfg = yaml.load(app_config.read())
+                cfg = yaml.load(app_config.read(), Loader=yaml.FullLoader)
         except IOError:
             raise ContextError("Not working within a kyber context (can't read {})".format(
                 cfg_name))
