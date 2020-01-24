@@ -32,6 +32,6 @@ def save_secret(env, cfg_vars):
         else:
             click.echo("Exiting, can't load values into a non-existent object")
             return
-    for key, value in cfg_vars.iteritems():
+    for key, value in cfg_vars.items():
         env.secret[key] = value
     env.secret.update()

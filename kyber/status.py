@@ -2,8 +2,8 @@ import click
 import os
 import time
 
-from objects import App, Environment
-from lib import ecr
+from .objects import App, Environment
+from .lib import ecr
 from dulwich import porcelain as git
 
 
@@ -18,10 +18,8 @@ def echo(context, skip_k8s=False, skip_ecr=False):
     click.echo("Project: {}".format(context.name))
     for linked_deployment in environment.linked_deployments:
         click.echo("Linked deployment: {}".format(linked_deployment.name))
-    click.echo("Kubernetes target: {} ({})".format(
-        context.kube_ctx['cluster'],
-        context.kube_ctx.get('namespace', 'default')
-    ))
+
+    click.echo("Kubernetes target: {} ({})".format(context.kube_ctx['cluster'], context.kube_ctx.get('namespace', 'default')))  # noqa
     click.echo("Docker registry: {}".format(context.docker))
     if not skip_k8s:
         deployed_app = Environment(context.name).app
@@ -38,10 +36,10 @@ def echo(context, skip_k8s=False, skip_ecr=False):
 
         # Indent the whole message to make it stand out more in the status output
         indent = 4
-        indented_message = ''.join(' ' * indent + line for line in commit.message.splitlines(True))
+        indented_message = ''.join(' ' * indent + line for line in commit.message.decode().splitlines(True))
 
         click.echo("")
-        click.echo("Author: {}".format(commit.author))
+        click.echo("Author: {}".format(commit.author.decode()))
         click.echo("Date:   {}".format(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime(commit.commit_time))))
         click.echo("")
         click.echo("{}".format(indented_message))

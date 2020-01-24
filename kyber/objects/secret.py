@@ -3,6 +3,20 @@ import json
 import pykube
 
 
+def b64_decode(s):
+    if isinstance(s, str):
+        s = s.encode('utf-8')
+    decoded = base64.b64decode(s)
+    return decoded.decode('utf-8')
+
+
+def b64_encode(s):
+    if isinstance(s, str):
+        s = s.encode('utf-8')
+    encoded = base64.b64encode(s)
+    return encoded.decode('utf-8')
+
+
 class Secret(pykube.Secret):
     """ kubernetes secrets wrapper, implements almost complete dict interface
     and automatically base64 encodes/decodes values to maintain them as base64
@@ -14,10 +28,10 @@ class Secret(pykube.Secret):
             self.obj['data'] = dict()
 
     def __setitem__(self, key, item):
-        self.obj['data'][key] = base64.b64encode(item)
+        self.obj['data'][key] = b64_encode(item)
 
     def __getitem__(self, key):
-        return base64.b64decode(self.obj['data'][key])
+        return b64_decode(self.obj['data'][key])
 
     def __delitem__(self, key):
         del self.obj['data'][key]
@@ -26,7 +40,7 @@ class Secret(pykube.Secret):
         return len(self.obj['data'])
 
     def __cmp__(self, dict_):
-        return cmp(self.obj['data'], dict_)
+        return (self.obj['data'] > dict_) - (self.obj['data'] < dict_)
 
     def __contains__(self, item):
         return item in self.obj['data']
@@ -38,22 +52,22 @@ class Secret(pykube.Secret):
         return "<Secret {}: {}>".format(self.name, repr(self.obj['data']))
 
     def __unicode__(self):
-        return unicode(repr(self))
+        return str(repr(self))
 
     def has_key(self, k):
-        return self.obj['data'].has_key(k)  # noqa
+        return k in self.obj['data']  # noqa
 
     def keys(self):
-        return self.obj['data'].keys()
+        return list(self.obj['data'].keys())
 
     def values(self):
-        return self.obj['data'].values()
+        return list(self.obj['data'].values())
 
     def items(self):
-        return self.obj['data'].items()
+        return list(self.obj['data'].items())
 
     def iteritems(self):
-        return self.obj['data'].iteritems()
+        return iter(self.obj['data'].items())
 
     def pop(self, *args, **kwargs):
         return self.obj['data'].pop(*args, **kwargs)

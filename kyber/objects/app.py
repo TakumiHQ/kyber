@@ -23,7 +23,7 @@ class App(object):
                 tag=self.tag,
                 port=self.port,
                 ssl_cert=self.ssl_cert,
-                dns_name=self.dns_name).iteritems()
+                dns_name=self.dns_name).items()
             if v is not None)
 
     @property
