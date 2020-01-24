@@ -27,7 +27,7 @@ class Config(object):
         filepath = os.path.join(cls._kyber_dir, 'config')
         if os.path.exists(filepath):
             with open(filepath) as config_file:
-                config = yaml.load(config_file.read())
+                config = yaml.load(config_file.read(), Loader=yaml.FullLoader)
         return config
 
     @classmethod
