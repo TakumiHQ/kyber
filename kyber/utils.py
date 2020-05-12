@@ -29,7 +29,7 @@ class TimeIt(object):
 
     def __exit__(self, *args, **kwargs):
         self.end_t = time.time()
-        print "{}: took {}s".format(self.name, self.end_t - self.start_t)
+        print("{}: took {}s".format(self.name, self.end_t - self.start_t))
 
 
 def get_executable_path(executable):

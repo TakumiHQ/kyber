@@ -41,7 +41,7 @@ class Context(object):
         cfg_name = os.path.join(self.cwd, '.kyber/config')
         try:
             with open(cfg_name) as app_config:
-                cfg = yaml.load(app_config.read())
+                cfg = yaml.load(app_config.read(), Loader=yaml.FullLoader)
         except IOError:
             raise ContextError("Not working within a kyber context (can't read {})".format(
                 cfg_name))
@@ -84,11 +84,14 @@ class Context(object):
         else:
             git_hash = git_hash.replace('git_', '')
 
+        if isinstance(git_hash, str):
+            git_hash = git_hash.encode('ascii')
+
         self.git_hash = git_hash
 
     @property
     def tag(self):
-        return 'git_{}'.format(self.git_hash)
+        return 'git_{}'.format(self.git_hash.decode())
 
 
 def required(**ctx_kwargs):
@@ -99,7 +102,7 @@ def required(**ctx_kwargs):
                 ctx = Context(**ctx_kwargs)
                 kwargs['ctx'] = ctx
             except ContextError as e:
-                click.echo("Unable to load kyber context: {}".format(e.message))
+                click.echo("Unable to load kyber context: {}".format(e))
                 sys.exit(1)
 
             return fn(*args, **kwargs)

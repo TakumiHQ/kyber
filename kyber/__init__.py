@@ -7,18 +7,18 @@ from dulwich.errors import NotGitRepository
 from jinja2 import Template
 
 # logical modules
-import dash
-import deploy
-import config
-import context
-import init
-import shell
-import status
-import logs
+from . import dash
+from . import deploy
+from . import config
+from . import context
+from . import init
+from . import shell
+from . import status
+from . import logs
 
 # objects and helpers
-from objects import App, Environment
-from lib import ecr
+from .objects import App, Environment
+from .lib import ecr
 
 
 @click.group()
@@ -101,7 +101,7 @@ def get_completion(ctx):
     """ dump a bash/zsh compatible kb completion script """
     available_commands = cli.list_commands(ctx)
     available_config_commands = config_cli.list_commands(ctx)
-    raw_tpl = pkgutil.get_data('kyber', 'templates/kyber-completion.sh')
+    raw_tpl = pkgutil.get_data('kyber', 'templates/kyber-completion.sh').decode('utf-8')
     click.echo(Template(raw_tpl).render(
         kyber_commands=available_commands,
         kyber_config_commands=available_config_commands
@@ -170,7 +170,7 @@ def config_set(ctx, key, value):
 def config_unset(ctx, key):
     env = Environment(ctx.name)
     cfg = env.secret
-    if click.confirm(u"Do you wish to delete config variable {}.{} with value of `{}`".format(
+    if click.confirm("Do you wish to delete config variable {}.{} with value of `{}`".format(
             ctx.name, key, cfg[key])):
         del cfg[key]
         cfg.update()

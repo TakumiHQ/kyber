@@ -18,13 +18,6 @@ def get_requirements():
     return [str(req) for req in requirements]
 
 
-def get_version():
-    __version__ = None
-    with open('kyber/_version.py') as version_src:
-        exec(version_src.read())
-    return __version__
-
-
 if __name__ == "__main__":
     install_requires = get_requirements()
     dependency_links = []
@@ -42,7 +35,7 @@ if __name__ == "__main__":
 
     setup(
         name='kyber-k8s',
-        version=get_version(),
+        version="0.8.0rc2",
         description='Deploy and manage simple apps in kubernetes.',
         url='https://github.com/TakumiHQ/kyber',
         author='Steinn Eldjarn Sigurdarson',

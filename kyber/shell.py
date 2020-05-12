@@ -18,7 +18,7 @@ def run(name, shell):
             'KYBER_APP': name,
             'KYBER_KUBECTL_CONTEXT': kube_api.config.current_context,
         }
-        return " ".join(["{}={}".format(key, val) for key, val in d.iteritems()])
+        return " ".join(["{}={}".format(key, val) for key, val in d.items()])
 
     cmd = '{env} {shell}'.format(env=env_vars(), shell=shell)
 

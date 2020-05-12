@@ -24,8 +24,8 @@ object_cls = dict(
 
 def kube_from_template(template, app):
     raw_tpl = pkgutil.get_data('kyber', 'templates/{}.yaml'.format(template))
-    cooked_tpl = Template(raw_tpl).render(dict(app=app))
-    return yaml.load(cooked_tpl)
+    cooked_tpl = Template(raw_tpl.decode()).render(dict(app=app))
+    return yaml.load(cooked_tpl, Loader=yaml.FullLoader)
 
 
 class Environment(object):
@@ -46,7 +46,7 @@ class Environment(object):
     def _get_linked_deployments(self):
         linked = []
         if self.deployment is not None:
-            for key in self.deployment.annotations.keys():
+            for key in list(self.deployment.annotations.keys()):
                 if key.startswith(LINKED_DEPLOYMENT_KEY_PREFIX):
                     deployment = Deployment.objects(kube_api).get(
                         name=self.deployment.annotations[key]
@@ -55,7 +55,7 @@ class Environment(object):
         return linked
 
     def status(self):
-        for name, obj in self.kube_objects.iteritems():
+        for name, obj in self.kube_objects.items():
             click.echo("[{}] {}".format('X' if obj is not None else ' ', name))
 
     def app_from_objects(self):
@@ -94,13 +94,13 @@ class Environment(object):
     def sync(self):
         if self.app is None:
             raise Exception("Can't sync environment without an app!")
-        for name, obj in self.kube_objects.iteritems():
+        for name, obj in self.kube_objects.items():
             cls = object_cls[name]
             new = cls(kube_api, kube_from_template(name, self.app))
             if obj is None:
                 new.create()
             else:
-                print "Updating {}".format(name), new.obj
+                print("Updating {}".format(name), new.obj)
                 new.update()
 
     @property
@@ -113,7 +113,7 @@ class Environment(object):
 
     @property
     def missing_objects(self):
-        return dict((name, obj,) for (name, obj) in self.kube_objects.iteritems() if obj is None)
+        return dict((name, obj,) for (name, obj) in self.kube_objects.items() if obj is None)
 
     @property
     def complete(self):

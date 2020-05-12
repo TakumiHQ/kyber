@@ -3,7 +3,7 @@ import iso8601
 import itertools
 import threading
 import time
-import Queue
+import queue
 
 from pykube.objects import ObjectDoesNotExist
 from kyber.lib.kube import kube_api
@@ -32,7 +32,7 @@ class TimestampOrderedQueue(object):
       get the same priority (0) as no timestamp could be found.
     """
     def __init__(self, keep_timestamp=None, verbose=None):
-        self.pq = Queue.PriorityQueue()
+        self.pq = queue.PriorityQueue()
         self.counter = itertools.count()
 
         if keep_timestamp is None:
@@ -56,11 +56,11 @@ class TimestampOrderedQueue(object):
             (ts, logstring) = parse_logentry(logentry)
         except Exception as e:
             if self.verbose:
-                click.echo(u"Can't parse iso8601 timestamp from `{}`, falling back to ts (priority) 0."
-                           u"Error: {}".format(logentry, e))
+                click.echo("Can't parse iso8601 timestamp from `{}`, falling back to ts (priority) 0."
+                           "Error: {}".format(logentry, e))
             (ts, logstring) = 0, logentry
 
-        if isinstance(logentry, basestring):
+        if isinstance(logentry, str):
             item = '{pod}: {entry}'.format(
                 pod=pod,
                 entry=logentry if self.keep_timestamp else logstring
@@ -86,7 +86,7 @@ class LogStream(object):
         self.source = source
 
     def __repr__(self):
-        return u'<LogStream({})>'.format(self.pod)
+        return '<LogStream({})>'.format(self.pod)
 
 
 class LogMultiplexer(object):
@@ -105,7 +105,7 @@ class LogMultiplexer(object):
 
     def run_one(self, stream):
         for item in stream.source:
-            self.queue.put(stream.pod, item)
+            self.queue.put(stream.pod, item.decode('utf-8'))
 
     def run_all(self):
         for stream in self.streams:
@@ -139,7 +139,7 @@ def get(app, pod, since_seconds, keep_timestamp, follow):
         try:
             pods.append(Pod.objects(kube_api).get_by_name(pod))
         except ObjectDoesNotExist:
-            click.echo(u"Can't find a pod named `{}`".format(pod))
+            click.echo("Can't find a pod named `{}`".format(pod))
 
     queue = TimestampOrderedQueue(keep_timestamp)
     multiplexer = LogMultiplexer(queue)
